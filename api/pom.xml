@@ -9,13 +9,10 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>corebanking</artifactId>
-    <dependencies>
-        <dependency>
-            <groupId>com.example.akka</groupId>
-            <artifactId>api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+    <artifactId>api</artifactId>
+
+    <properties>
+        <skip.docker>true</skip.docker>
+    </properties>
 
 </project>

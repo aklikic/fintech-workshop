@@ -18,6 +18,7 @@
     <!-- Your dependencies go here -->
   </dependencies>
   <modules>
+    <module>api</module>
     <module>payments</module>
     <module>corebanking</module>
   </modules>

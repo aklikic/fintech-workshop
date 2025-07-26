@@ -10,5 +10,11 @@
     </parent>
 
     <artifactId>payments</artifactId>
-
+    <dependencies>
+        <dependency>
+            <groupId>com.example.akka</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>
