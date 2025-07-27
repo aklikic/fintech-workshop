@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.akka.payments.api";
+
+package com.example.akka.payments.api;
+
+message Card {
+  string pan = 1;
+  string expiry_date = 2;
+  string cvv = 3;
+  string account_id = 4;
+}
+
+message ValidateCardRequest {
+  string pan = 1;
+  string expiry_date = 2;
+  string cvv = 3;
+}
+
+message ValidateCardResponse {
+  bool is_valid = 1;
+  string message = 2;
+}
+
+message GetCardRequest {
+  string pan = 1;
+}
+
+service CardGrpcEndpoint {
+  rpc CreateCard (Card) returns (Card) {}
+  rpc ValidateCard (ValidateCardRequest) returns (ValidateCardResponse) {}
+  rpc GetCard (GetCardRequest) returns (Card) {}
+}
