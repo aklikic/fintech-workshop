@@ -26,10 +26,26 @@ message AuthorizeTransactionRequest {
   int32 amount = 3;
 }
 
+enum AuthResult {
+  AUTH_RESULT_UNSPECIFIED = 0;
+  AUTHORISED = 1;
+  DECLINED = 2;
+}
+
+enum AuthStatus {
+  AUTH_STATUS_UNSPECIFIED = 0;
+  OK = 1;
+  CARD_NOT_FOUND = 2;
+  INSUFFICIENT_FUNDS = 3;
+  ACCOUNT_CLOSED = 4;
+  UNDISCLOSED = 5;
+  ACCOUNT_NOT_FOUND = 6;
+}
+
 message AuthorizeTransactionResponse {
   string auth_code = 1;
-  string auth_result = 2;
-  string auth_status = 3;
+  AuthResult auth_result = 2;
+  AuthStatus auth_status = 3;
 }
 
 message CaptureTransactionRequest {
@@ -37,7 +53,8 @@ message CaptureTransactionRequest {
   string transaction_id = 2;
 }
 
-message CaptureTransactionResponse {
+message
+    CaptureTransactionResponse {
   bool success = 1;
 }
 

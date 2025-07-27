@@ -111,8 +111,8 @@ public class AccountGrpcEndpointIntegrationTest extends TestKitSupport {
         
         var response = client.authorizeTransaction().invoke(authRequest);
         
-        assertEquals("declined", response.getAuthResult());
-        assertEquals("account_not_found", response.getAuthStatus());
+        assertEquals("DECLINED", response.getAuthResult().toString());
+        assertEquals("ACCOUNT_NOT_FOUND", response.getAuthStatus().toString());
         assertEquals("", response.getAuthCode());
     }
 

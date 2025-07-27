@@ -61,8 +61,8 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
             
             return AuthorizeTransactionResponse.newBuilder()
                     .setAuthCode(response.authCode().orElse(""))
-                    .setAuthResult(response.authResult().name())
-                    .setAuthStatus(response.authStatus().name())
+                    .setAuthResult(toProtoAuthResult(response.authResult()))
+                    .setAuthStatus(toProtoAuthStatus(response.authStatus()))
                     .build();
         } catch (Exception e) {
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
@@ -93,5 +93,23 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
                 .setAvailableBalance(account.availableBalance())
                 .setPostedBalance(account.postedBalance())
                 .build();
+    }
+    
+    private AuthResult toProtoAuthResult(AccountEntity.AuthorisationResult result) {
+        return switch (result) {
+            case authorised -> AuthResult.AUTHORISED;
+            case declined -> AuthResult.DECLINED;
+        };
+    }
+    
+    private AuthStatus toProtoAuthStatus(AccountEntity.AuthorisationStatus status) {
+        return switch (status) {
+            case ok -> AuthStatus.OK;
+            case card_not_found -> AuthStatus.CARD_NOT_FOUND;
+            case insufficient_funds -> AuthStatus.INSUFFICIENT_FUNDS;
+            case account_closed -> AuthStatus.ACCOUNT_CLOSED;
+            case undiscosed -> AuthStatus.UNDISCLOSED;
+            case account_not_found -> AuthStatus.ACCOUNT_NOT_FOUND;
+        };
     }
 }
