@@ -1,6 +1,9 @@
 package com.example.akka.payments.api;
 
+import akka.javasdk.DependencyProvider;
+import akka.javasdk.testkit.TestKit;
 import akka.javasdk.testkit.TestKitSupport;
+import com.example.akka.account.api.AccountGrpcEndpointClient;
 import com.example.akka.payments.api.Card;
 import com.example.akka.payments.api.CardGrpcEndpointClient;
 import com.example.akka.payments.api.GetCardRequest;
@@ -10,6 +13,20 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CardGrpcEndpointIntegrationTest extends TestKitSupport {
+
+    @Override
+    protected TestKit.Settings testKitSettings() {
+        // Create custom DependencyProvider that provides mocked AccountGrpcEndpointClient
+        DependencyProvider mockDependencyProvider = new DependencyProvider() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public <T> T getDependency(Class<T> clazz) {
+               return null;
+            }
+        };
+
+        return TestKit.Settings.DEFAULT.withDependencyProvider(mockDependencyProvider);
+    }
 
     @Test
     public void testCreateCard() {
