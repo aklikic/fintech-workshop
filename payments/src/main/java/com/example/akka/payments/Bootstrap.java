@@ -1,4 +1,4 @@
-package com.example.akka.corebanking;
+package com.example.akka.payments;
 
 import akka.javasdk.DependencyProvider;
 import akka.javasdk.ServiceSetup;

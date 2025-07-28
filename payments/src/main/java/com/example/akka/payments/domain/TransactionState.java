@@ -1,4 +1,4 @@
-package com.example.akka.corebanking.domain;
+package com.example.akka.payments.domain;
 
 public record TransactionState(
     String idempotencyKey,

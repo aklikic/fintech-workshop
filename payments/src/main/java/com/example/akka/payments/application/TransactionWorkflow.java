@@ -1,4 +1,4 @@
-package com.example.akka.corebanking.application;
+package com.example.akka.payments.application;
 
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.client.ComponentClient;
@@ -7,7 +7,7 @@ import com.example.akka.account.api.AccountGrpcEndpointClient;
 import com.example.akka.account.api.AuthorizeTransactionRequest;
 import com.example.akka.account.api.AuthResult;
 import com.example.akka.account.api.AuthStatus;
-import com.example.akka.corebanking.domain.TransactionState;
+import com.example.akka.payments.domain.TransactionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

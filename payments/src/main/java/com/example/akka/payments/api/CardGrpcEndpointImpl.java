@@ -1,10 +1,10 @@
-package com.example.akka.corebanking.api;
+package com.example.akka.payments.api;
 
 import akka.grpc.GrpcServiceException;
 import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
-import com.example.akka.corebanking.application.CardEntity;
+import com.example.akka.payments.application.CardEntity;
 import io.grpc.Status;
 import org.slf4j.Logger;
 

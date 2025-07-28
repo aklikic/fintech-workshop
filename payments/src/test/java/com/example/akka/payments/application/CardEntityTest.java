@@ -1,8 +1,8 @@
-package com.example.akka.corebanking.application;
+package com.example.akka.payments.application;
 
 import akka.javasdk.testkit.EventSourcedTestKit;
-import com.example.akka.corebanking.domain.CardEvent;
-import com.example.akka.corebanking.domain.CardState;
+import com.example.akka.payments.domain.CardEvent;
+import com.example.akka.payments.domain.CardState;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

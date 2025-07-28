@@ -46,7 +46,7 @@ enum TransactionAuthStatus {
   ACCOUNT_NOT_FOUND = 6;
 }
 
-message TransactionState {
+message Transaction {
   string idempotency_key = 1;
   string transaction_id = 2;
   string card_pan = 3;
@@ -61,5 +61,5 @@ message TransactionState {
 
 service TransactionGrpcEndpoint {
   rpc StartTransaction (StartTransactionRequest) returns (StartTransactionResponse) {}
-  rpc GetTransaction (GetTransactionRequest) returns (TransactionState) {}
+  rpc GetTransaction (GetTransactionRequest) returns (Transaction) {}
 }

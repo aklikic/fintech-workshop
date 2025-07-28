@@ -1,15 +1,20 @@
-package com.example.akka.corebanking.application;
+package com.example.akka.payments.application;
 
 import akka.grpc.GrpcClientSettings;
 import akka.javasdk.DependencyProvider;
 import akka.javasdk.testkit.TestKit;
 import akka.javasdk.testkit.TestKitSupport;
 import com.example.akka.account.api.AccountGrpcEndpointClient;
-import com.example.akka.corebanking.api.Card;
-import com.example.akka.corebanking.api.CardGrpcEndpointClient;
-import com.example.akka.corebanking.domain.TransactionState;
+import com.example.akka.account.api.AuthorizeTransactionResponse;
+import com.example.akka.account.api.AuthResult;
+import com.example.akka.account.api.AuthStatus;
+import com.example.akka.payments.api.Card;
+import com.example.akka.payments.api.CardGrpcEndpointClient;
+import com.example.akka.payments.domain.TransactionState;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import org.wiremock.grpc.GrpcExtensionFactory;
+import org.wiremock.grpc.dsl.WireMockGrpcService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +24,13 @@ import java.time.Duration;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.wiremock.grpc.dsl.WireMockGrpc.*;
 
 public class TransactionWorkflowTest extends TestKitSupport {
 
     private WireMockServer wireMockServer;
-    private  AccountGrpcEndpointClient mockAccountClient;
+    private AccountGrpcEndpointClient mockAccountClient;
+    private WireMockGrpcService mockAccountService;
 
     @Override
     protected TestKit.Settings testKitSettings() {
@@ -48,11 +55,17 @@ public class TransactionWorkflowTest extends TestKitSupport {
 
         var host = "localhost";
         var port = 8089;
-        // Start WireMock server on port 8089 to mock AccountGrpcEndpointClient
+        // Start WireMock server on port 8089 to mock AccountGrpcEndpointClient  
         wireMockServer = new WireMockServer(wireMockConfig()
-            .port(port));
+            .port(port)
+            .extensions(new GrpcExtensionFactory())
+            .disableRequestJournal()); // Disable file-based features
         wireMockServer.start();
         WireMock.configureFor(host, port);
+        
+        // Create gRPC service wrapper for cleaner stubbing
+        mockAccountService = new WireMockGrpcService(new WireMock(port), "com.example.akka.account.api.AccountGrpcEndpoint");
+        
         mockAccountClient = AccountGrpcEndpointClient.create(GrpcClientSettings.connectToServiceAt(host,port,testKit.getActorSystem()),testKit.getActorSystem());
     }
 
@@ -65,12 +78,15 @@ public class TransactionWorkflowTest extends TestKitSupport {
 
     @Test
     public void testTransactionWorkflowWithMockedAccountService() {
-        // Setup WireMock to return successful authorization
-        stubFor(post(urlEqualTo("/com.example.akka.account.api.AccountGrpcEndpoint/AuthorizeTransaction"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/grpc")
-                        .withBody("successful_auth_response")));
+        // Setup WireMock gRPC service to return successful authorization
+        mockAccountService.stubFor(
+            method("AuthorizeTransaction")
+                .willReturn(message(AuthorizeTransactionResponse.newBuilder()
+                    .setAuthCode("AUTH123")
+                    .setAuthResult(AuthResult.AUTHORISED)
+                    .setAuthStatus(AuthStatus.OK)
+                    .build()))
+        );
 
         // Create a valid card first
         var cardClient = getGrpcEndpointClient(CardGrpcEndpointClient.class);

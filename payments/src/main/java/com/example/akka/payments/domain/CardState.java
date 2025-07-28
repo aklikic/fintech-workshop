@@ -1,4 +1,4 @@
-package com.example.akka.corebanking.domain;
+package com.example.akka.payments.domain;
 
 public record CardState(String pan, String expiryDate, String cvv, String accountId) {
     public static CardState empty() {

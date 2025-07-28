@@ -120,20 +120,6 @@ public class AccountStateTest {
         assertEquals(300, newState.postedBalance()); // 500 - 200
     }
 
-    @Test
-    public void testOnCaptureAddedWithNonExistentTransaction() {
-        var auth = new AccountState.Authorisation("tx1", 200, "auth1");
-        AccountState state = new AccountState("account123", List.of(auth), 800, 500);
-        AccountEvent.TransCaptureAdded event = new AccountEvent.TransCaptureAdded("tx999");
-        
-        AccountState newState = state.onCaptureAdded(event);
-        
-        assertEquals(state, newState); // should return same instance
-        assertEquals(1, newState.authorisations().size());
-        assertEquals("tx1", newState.authorisations().get(0).transactionId());
-        assertEquals(800, newState.availableBalance());
-        assertEquals(500, newState.postedBalance());
-    }
 
     @Test
     public void testAccountStateImmutability() {

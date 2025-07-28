@@ -1,11 +1,11 @@
-package com.example.akka.corebanking.api;
+package com.example.akka.payments.api;
 
 import akka.grpc.GrpcServiceException;
 import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
-import com.example.akka.corebanking.application.TransactionWorkflow;
-import com.example.akka.corebanking.domain.TransactionState;
+import com.example.akka.payments.application.TransactionWorkflow;
+import com.example.akka.payments.domain.TransactionState;
 import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
     }
 
     @Override
-    public com.example.akka.corebanking.api.TransactionState getTransaction(GetTransactionRequest request) {
+    public Transaction getTransaction(GetTransactionRequest request) {
         logger.info("Getting transaction for idempotency key: {}", request.getIdempotencyKey());
         
         try {
@@ -71,8 +71,8 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
         }
     }
     
-    private com.example.akka.corebanking.api.TransactionState toProtoTransactionState(TransactionState state) {
-        return com.example.akka.corebanking.api.TransactionState.newBuilder()
+    private Transaction toProtoTransactionState(TransactionState state) {
+        return Transaction.newBuilder()
             .setIdempotencyKey(state.idempotencyKey())
             .setTransactionId(state.transactionId())
             .setCardPan(state.cardData().cardPan())
