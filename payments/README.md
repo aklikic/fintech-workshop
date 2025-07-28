@@ -13,19 +13,19 @@ Use the following grpcurl commands to interact with the CardGrpcEndpoint service
 #### Create Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-123"}' \
-  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/CreateCard
+  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/CreateCard
 ```
 
 #### Get Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111"}' \
-  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/GetCard
+  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/GetCard
 ```
 
 #### Validate Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123"}' \
-  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/ValidateCard
+  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/ValidateCard
 ```
 
 ### TransactionGrpcEndpoint gRPC Commands
@@ -43,13 +43,13 @@ grpcurl -plaintext -d '{
   "amount": 1000, 
   "currency": "USD"
 }' \
-  localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/StartTransaction
+  localhost:9001 com.example.akka.corebanking.api.TransactionGrpcEndpoint/StartTransaction
 ```
 
 #### Get Transaction
 ```bash
 grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
-  localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/GetTransaction
+  localhost:9001 com.example.akka.corebanking.api.TransactionGrpcEndpoint/GetTransaction
 ```
 
 ## Components
