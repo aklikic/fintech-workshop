@@ -6,7 +6,9 @@ import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
 import com.example.akka.account.api.*;
 import com.example.akka.corebanking.application.AccountEntity;
+import com.example.akka.corebanking.application.TotalExpenditureView;
 import com.example.akka.corebanking.application.TransactionHistoryEntity;
+import com.example.akka.corebanking.domain.TotalExpenditure;
 import com.example.akka.corebanking.domain.TransactionHistory;
 import io.grpc.Status;
 import org.slf4j.Logger;
@@ -22,7 +24,8 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
         this.componentClient = componentClient;
     }
 
-/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
+    /* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
+
     /**
      * Creates a new account with the given account ID and initial balance.
      *
@@ -31,7 +34,7 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
      * @throws GrpcServiceException if an error occurs during account creation
      */
 
-/* <<<<<<<<<<  9bf84039-ec58-4e9b-b369-411c670c349a  >>>>>>>>>>> */
+    /* <<<<<<<<<<  9bf84039-ec58-4e9b-b369-411c670c349a  >>>>>>>>>>> */
     @Override
     public Account createAccount(CreateAccountRequest in) {
         logger.info("Creating account {}", in.getAccountId());
@@ -63,31 +66,31 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
 
     @Override
     public AuthorizeTransactionResponse authorizeTransaction(AuthorizeTransactionRequest in) {
-        logger.info("Authorizing transaction {} for account {} amount {}", 
-                   in.getTransactionId(), in.getAccountId(), in.getAmount());
-        
+        logger.info("Authorizing transaction {} for account {} amount {}",
+                in.getTransactionId(), in.getAccountId(), in.getAmount());
+
         TransactionHistory.TransactionHistoryId trxId = new TransactionHistory.TransactionHistoryId(in.getTransactionId(), in.getAccountId());
         var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-            .method(TransactionHistoryEntity::getTransaction)
-            .invoke();
-        
+                .method(TransactionHistoryEntity::getTransaction)
+                .invoke();
+
         if (transactionHistory.isPresent() && (transactionHistory.get().isAuthorized() || transactionHistory.get().isCaptured())) {
-            
+
             logger.info("Duplicate transaction {}. Returning from cache", in.getTransactionId());
             return AuthorizeTransactionResponse.newBuilder()
-                .setAuthCode(transactionHistory.get().authCode())
-                .setAuthResult(AuthResult.AUTHORISED)
-                .setAuthStatus(AuthStatus.OK)
-                .build();
+                    .setAuthCode(transactionHistory.get().authCode())
+                    .setAuthResult(AuthResult.AUTHORISED)
+                    .setAuthStatus(AuthStatus.OK)
+                    .build();
         }
-        
+
         try {
-            
+
             var authRequest = new AccountEntity.AuthorisationRequest(in.getTransactionId(), in.getAmount());
             var response = componentClient.forEventSourcedEntity(in.getAccountId())
                     .method(AccountEntity::authoriseTransaction)
                     .invoke(authRequest);
-            
+
             return AuthorizeTransactionResponse.newBuilder()
                     .setAuthCode(response.authCode().orElse(""))
                     .setAuthResult(toProtoAuthResult(response.authResult()))
@@ -101,30 +104,40 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
     @Override
     public CaptureTransactionResponse captureTransaction(CaptureTransactionRequest in) {
         logger.info("Capturing transaction {} for account {}", in.getTransactionId(), in.getAccountId());
-        
+
         TransactionHistory.TransactionHistoryId trxId = new TransactionHistory.TransactionHistoryId(in.getTransactionId(), in.getAccountId());
         var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-            .method(TransactionHistoryEntity::getTransaction)
-            .invoke();
-        
-        if (transactionHistory.isPresent() && transactionHistory.get().isCaptured()){
+                .method(TransactionHistoryEntity::getTransaction)
+                .invoke();
+
+        if (transactionHistory.isPresent() && transactionHistory.get().isCaptured()) {
             logger.info("Duplicate transaction {}. Returning from cache", in.getTransactionId());
             return CaptureTransactionResponse.newBuilder().setSuccess(true).build();
         }
-        
+
         try {
             componentClient.forEventSourcedEntity(in.getAccountId())
                     .method(AccountEntity::captureTransaction)
                     .invoke(in.getTransactionId());
-            
+
             return CaptureTransactionResponse.newBuilder()
                     .setSuccess(true)
                     .build();
         } catch (Exception e) {
-            logger.error("Failed to capture transaction {} for account {}: {}", 
-                        in.getTransactionId(), in.getAccountId(), e.getMessage());
+            logger.error("Failed to capture transaction {} for account {}: {}",
+                    in.getTransactionId(), in.getAccountId(), e.getMessage());
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
         }
+    }
+
+    @Override
+    public ExpenditureResponse getExpenditure(ExpenditureRequest in) {
+        TotalExpenditure invoke = componentClient.forView().method(TotalExpenditureView::get).invoke(in.getAccountId());
+        return ExpenditureResponse.newBuilder()
+                .setAccountId(invoke.accountId())
+                .setMoneyIn(invoke.moneyIn())
+                .setMoneyOut(invoke.moneyOut())
+                .build();
     }
 
     private Account fromState(AccountEntity.ApiAccount account) {
@@ -134,14 +147,14 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
                 .setPostedBalance(account.postedBalance())
                 .build();
     }
-    
+
     private AuthResult toProtoAuthResult(AccountEntity.AuthorisationResult result) {
         return switch (result) {
             case authorised -> AuthResult.AUTHORISED;
             case declined -> AuthResult.DECLINED;
         };
     }
-    
+
     private AuthStatus toProtoAuthStatus(AccountEntity.AuthorisationStatus status) {
         return switch (status) {
             case ok -> AuthStatus.OK;

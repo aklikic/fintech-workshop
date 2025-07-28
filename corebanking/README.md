@@ -20,7 +20,7 @@ grpcurl -plaintext -d '{"account_id": "account-123"}' \
 
 ### Authorize Transaction
 ```bash
-grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-456", "amount": 500}' \
+grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-123", "amount": 500}' \
   localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/AuthorizeTransaction
 ```
 
@@ -28,6 +28,12 @@ grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-456",
 ```bash
 grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-456"}' \
   localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/CaptureTransaction
+```
+
+### Get Expenditure
+```bash
+grpcurl -plaintext -d '{"account_id": "account-123"}' \
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/GetExpenditure
 ```
 
 **Note:** This service runs on port 9002 as configured in application.conf
