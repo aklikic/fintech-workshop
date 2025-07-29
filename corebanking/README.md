@@ -20,7 +20,7 @@ grpcurl -plaintext -d '{"account_id": "account-123"}' \
 
 ### Authorize Transaction
 ```bash
-grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-123", "amount": 500}' \
+grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "tx-000", "amount": 5}' \
   localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/AuthorizeTransaction
 ```
 

@@ -12,10 +12,8 @@ import com.example.akka.corebanking.domain.TotalExpenditure;
 @ComponentId("total-expenditure-view")
 public class TotalExpenditureView extends View {
 
-
     @Consume.FromEventSourcedEntity(AccountEntity.class)
     public static class Updater extends TableUpdater<TotalExpenditure> {
-
         public Effect<TotalExpenditure> onUpdate(AccountEvent event) {
             return switch (event) {
                 case AccountEvent.Created create ->
