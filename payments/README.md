@@ -13,19 +13,19 @@ Use the following grpcurl commands to interact with the CardGrpcEndpoint service
 #### Create Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-123"}' \
-  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/CreateCard
+  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/CreateCard
 ```
 
 #### Get Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111"}' \
-  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/GetCard
+  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/GetCard
 ```
 
 #### Validate Card
 ```bash
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123"}' \
-  localhost:9001 com.example.akka.corebanking.api.CardGrpcEndpoint/ValidateCard
+  localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/ValidateCard
 ```
 
 ### TransactionGrpcEndpoint gRPC Commands
@@ -40,16 +40,22 @@ grpcurl -plaintext -d '{
   "card_pan": "4111111111111111", 
   "card_expiry_date": "12/25", 
   "card_cvv": "123", 
-  "amount": 1000, 
+  "amount": 500, 
   "currency": "USD"
 }' \
-  localhost:9001 com.example.akka.corebanking.api.TransactionGrpcEndpoint/StartTransaction
+  localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/StartTransaction
 ```
 
 #### Get Transaction
 ```bash
 grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
-  localhost:9001 com.example.akka.corebanking.api.TransactionGrpcEndpoint/GetTransaction
+  localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/GetTransaction
+```
+
+#### Capture Transaction
+```bash
+grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
+  localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/CaptureTransaction
 ```
 
 ## Components
@@ -60,20 +66,22 @@ grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
 ### Workflows
 - **TransactionWorkflow**: Orchestrates transaction processing with the following steps:
   1. **validate-card**: Validates card details against stored card data
-  2. **authorize-transaction**: Calls the corebanking service to authorize the transaction
+  2. **authorize-transaction**: Calls the corebanking service to authorize the transaction and pauses
+  3. **capture-transaction**: Captures the authorized transaction (triggered externally)
   
   The workflow uses the idempotency key as the workflow ID and includes a 5-minute timeout.
 
 ### gRPC Endpoints
 - **CardGrpcEndpointImpl**: Provides CRUD operations for card management
-- **TransactionGrpcEndpointImpl**: Exposes the TransactionWorkflow's `startTransaction` method and provides transaction status queries
+- **TransactionGrpcEndpointImpl**: Exposes the TransactionWorkflow's `startTransaction` and `captureTransaction` methods and provides transaction status queries
 
 ## Transaction Processing Flow
 
 1. **Start Transaction**: Client calls `StartTransaction` with card details and transaction information
 2. **Card Validation**: Workflow validates the provided card details against stored card data
-3. **Account Authorization**: If card is valid, workflow calls the corebanking service to authorize the transaction
-4. **Response**: Client receives transaction status and can query for updates using `GetTransaction`
+3. **Account Authorization**: If card is valid, workflow calls the corebanking service to authorize the transaction and pauses
+4. **Capture Transaction**: Client calls `CaptureTransaction` to complete the transaction capture
+5. **Response**: Client receives transaction status and can query for updates using `GetTransaction`
 
 ## Service Configuration
 

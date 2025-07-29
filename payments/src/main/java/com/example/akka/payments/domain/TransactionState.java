@@ -4,21 +4,27 @@ public record TransactionState(
     String idempotencyKey,
     String transactionId,
     CardData cardData,
+    String accountId,
     String authCode,
     AuthResult authResult,
-    AuthStatus authStatus
+    AuthStatus authStatus,
+    boolean captured
 ) {
     
     public static TransactionState empty() {
-        return new TransactionState("", "", CardData.empty(), "", AuthResult.declined, AuthStatus.ok);
+        return new TransactionState("", "", CardData.empty(), "", "", AuthResult.declined, AuthStatus.ok, false);
     }
     
     public boolean isEmpty() {
         return idempotencyKey.isEmpty();
     }
     
-    public TransactionState withAuthResult(String authCode, AuthResult authResult, AuthStatus authStatus) {
-        return new TransactionState(idempotencyKey, transactionId, cardData, authCode, authResult, authStatus);
+    public TransactionState withAuthResult(String accountId, String authCode, AuthResult authResult, AuthStatus authStatus) {
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
+    }
+    
+    public TransactionState withCaptured(boolean captured) {
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
     }
     
     public record CardData(

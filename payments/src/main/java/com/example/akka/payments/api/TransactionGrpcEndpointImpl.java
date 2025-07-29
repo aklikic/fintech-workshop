@@ -70,6 +70,28 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             throw new GrpcServiceException(Status.NOT_FOUND.augmentDescription("Transaction not found: " + e.getMessage()));
         }
     }
+
+    @Override
+    public CaptureTransactionResponse captureTransaction(CaptureTransactionRequest request) {
+        logger.info("Capturing transaction for idempotency key: {}", request.getIdempotencyKey());
+        
+        try {
+            var result = componentClient
+                .forWorkflow(request.getIdempotencyKey())
+                .method(TransactionWorkflow::captureTransaction)
+                .invoke();
+            
+            return CaptureTransactionResponse.newBuilder()
+                .setResult(mapCaptureResultToProtoResult(result))
+                .build();
+                
+        } catch (Exception e) {
+            logger.error("Failed to capture transaction for key: {}", request.getIdempotencyKey(), e);
+            return CaptureTransactionResponse.newBuilder()
+                .setResult(CaptureTransactionResult.TRANSACTION_NOT_FOUND)
+                .build();
+        }
+    }
     
     private Transaction toProtoTransactionState(TransactionState state) {
         return Transaction.newBuilder()
@@ -83,6 +105,7 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             .setAuthCode(state.authCode())
             .setAuthResult(toProtoAuthResult(state.authResult()))
             .setAuthStatus(toProtoAuthStatus(state.authStatus()))
+            .setCaptured(state.captured())
             .build();
     }
     
@@ -108,6 +131,15 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
         return switch (result) {
             case STARTED -> StartTransactionResult.STARTED;
             case ALREADY_EXISTS -> StartTransactionResult.ALREADY_EXISTS;
+        };
+    }
+    
+    private CaptureTransactionResult mapCaptureResultToProtoResult(TransactionWorkflow.CaptureTransactionResult result) {
+        return switch (result) {
+            case CAPTURE_STARTED -> CaptureTransactionResult.CAPTURE_STARTED;
+            case TRANSACTION_NOT_FOUND -> CaptureTransactionResult.TRANSACTION_NOT_FOUND;
+            case NOT_AUTHORIZED -> CaptureTransactionResult.NOT_AUTHORIZED;
+            case ALREADY_CAPTURED -> CaptureTransactionResult.ALREADY_CAPTURED;
         };
     }
 }

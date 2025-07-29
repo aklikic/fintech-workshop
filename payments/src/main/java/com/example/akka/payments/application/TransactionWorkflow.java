@@ -7,6 +7,7 @@ import com.example.akka.account.api.AccountGrpcEndpointClient;
 import com.example.akka.account.api.AuthorizeTransactionRequest;
 import com.example.akka.account.api.AuthResult;
 import com.example.akka.account.api.AuthStatus;
+import com.example.akka.account.api.CaptureTransactionRequest;
 import com.example.akka.payments.domain.TransactionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                     logger.info("Card validation failed for transaction: {}", currentState().transactionId());
                     var updatedState = currentState().withAuthResult(
                         "",
+                        "",
                         TransactionState.AuthResult.declined,
                         TransactionState.AuthStatus.card_not_found
                     );
@@ -83,6 +85,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                     
                     // Map protobuf response to serializable record
                     return new AuthorizationResult(
+                        card.accountId(),
                         protoResponse.getAuthCode(),
                         mapProtoAuthResult(protoResponse.getAuthResult()),
                         mapProtoAuthStatus(protoResponse.getAuthStatus())
@@ -90,6 +93,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                 } catch (Exception e) {
                     logger.error("Authorization failed for transaction: {}", currentState().transactionId(), e);
                     return new AuthorizationResult(
+                        "",
                         "",
                         TransactionState.AuthResult.declined,
                         TransactionState.AuthStatus.undiscosed
@@ -101,18 +105,49 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                            currentState().transactionId(), response.authResult(), response.authStatus());
 
                 var updatedState = currentState().withAuthResult(
+                    response.accountId(),
                     response.authCode(),
                     response.authResult(),
                     response.authStatus()
                 );
 
+                // If authorization failed, end the workflow
+                if (response.authResult() == TransactionState.AuthResult.declined) {
+                    return effects().updateState(updatedState).end();
+                }
+
+                // If authorized successfully, pause and wait for external capture trigger
+                return effects().updateState(updatedState).pause();
+            });
+
+        var captureTransactionStep = step("capture-transaction")
+            .call(() -> {
+                logger.info("Capturing transaction: {}", currentState().transactionId());
+                try {
+                    // Use stored accountId from authorization step
+                    var captureRequest = CaptureTransactionRequest.newBuilder()
+                        .setAccountId(currentState().accountId())
+                        .setTransactionId(currentState().transactionId())
+                        .build();
+
+                    var response = accountClient.captureTransaction().invoke(captureRequest);
+                    return response.getSuccess();
+                } catch (Exception e) {
+                    logger.error("Capture failed for transaction: {}", currentState().transactionId(), e);
+                    return false;
+                }
+            })
+            .andThen(Boolean.class, success -> {
+                logger.info("Capture result for transaction {}: {}", currentState().transactionId(), success);
+                var updatedState = currentState().withCaptured(success);
                 return effects().updateState(updatedState).end();
             });
 
         return workflow()
             .timeout(Duration.ofMinutes(5))
             .addStep(validateCardStep)
-            .addStep(authorizeTransactionStep);
+            .addStep(authorizeTransactionStep)
+            .addStep(captureTransactionStep);
     }
     
     public Effect<StartTransactionResult> startTransaction(StartTransactionRequest request) {
@@ -135,14 +170,37 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
             request.transactionId(),
             cardData,
             "",
+            "",
             TransactionState.AuthResult.declined,
-            TransactionState.AuthStatus.ok
+            TransactionState.AuthStatus.ok,
+            false
         );
         
         return effects()
             .updateState(initialState)
             .transitionTo("validate-card")
             .thenReply(StartTransactionResult.STARTED);
+    }
+    
+    public Effect<CaptureTransactionResult> captureTransaction() {
+        logger.info("Capture transaction requested for transaction: {}", 
+                   currentState() != null ? currentState().transactionId() : "unknown");
+        
+        if (currentState() == null || currentState().isEmpty()) {
+            return effects().reply(CaptureTransactionResult.TRANSACTION_NOT_FOUND);
+        }
+        
+        if (currentState().authResult() != TransactionState.AuthResult.authorised) {
+            return effects().reply(CaptureTransactionResult.NOT_AUTHORIZED);
+        }
+        
+        if (currentState().captured()) {
+            return effects().reply(CaptureTransactionResult.ALREADY_CAPTURED);
+        }
+        
+        return effects()
+            .transitionTo("capture-transaction")
+            .thenReply(CaptureTransactionResult.CAPTURE_STARTED);
     }
     
     public ReadOnlyEffect<TransactionState> getTransaction() {
@@ -183,6 +241,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
     ) {}
     
     public record AuthorizationResult(
+        String accountId,
         String authCode,
         TransactionState.AuthResult authResult,
         TransactionState.AuthStatus authStatus
@@ -191,5 +250,12 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
     public enum StartTransactionResult {
         STARTED,
         ALREADY_EXISTS
+    }
+    
+    public enum CaptureTransactionResult {
+        CAPTURE_STARTED,
+        TRANSACTION_NOT_FOUND,
+        NOT_AUTHORIZED,
+        ALREADY_CAPTURED
     }
 }

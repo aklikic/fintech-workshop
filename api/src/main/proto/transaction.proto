@@ -30,6 +30,22 @@ message GetTransactionRequest {
   string idempotency_key = 1;
 }
 
+message CaptureTransactionRequest {
+  string idempotency_key = 1;
+}
+
+enum CaptureTransactionResult {
+  CAPTURE_TRANSACTION_RESULT_UNSPECIFIED = 0;
+  CAPTURE_STARTED = 1;
+  TRANSACTION_NOT_FOUND = 2;
+  NOT_AUTHORIZED = 3;
+  ALREADY_CAPTURED = 4;
+}
+
+message CaptureTransactionResponse {
+  CaptureTransactionResult result = 1;
+}
+
 enum TransactionAuthResult {
   TRANSACTION_AUTH_RESULT_UNSPECIFIED = 0;
   AUTHORISED = 1;
@@ -57,9 +73,11 @@ message Transaction {
   string auth_code = 8;
   TransactionAuthResult auth_result = 9;
   TransactionAuthStatus auth_status = 10;
+  bool captured = 11;
 }
 
 service TransactionGrpcEndpoint {
   rpc StartTransaction (StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc GetTransaction (GetTransactionRequest) returns (Transaction) {}
+  rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
 }
