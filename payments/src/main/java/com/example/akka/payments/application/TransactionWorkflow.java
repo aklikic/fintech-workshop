@@ -3,11 +3,7 @@ package com.example.akka.payments.application;
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.workflow.Workflow;
-import com.example.akka.account.api.AccountGrpcEndpointClient;
-import com.example.akka.account.api.AuthorizeTransactionRequest;
-import com.example.akka.account.api.AuthResult;
-import com.example.akka.account.api.AuthStatus;
-import com.example.akka.account.api.CaptureTransactionRequest;
+import com.example.akka.account.api.*;
 import com.example.akka.payments.domain.TransactionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,20 +33,16 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                         .method(CardEntity::getCard)
                         .invoke();
                     
-                    if (card.isEmpty()) {
-                        return false;
-                    }
-                    
-                    var valid = card.expiryDate().equals(currentState().cardData().cardExpiryDate()) 
-                        && card.cvv().equals(currentState().cardData().cardCvv());
-                    return valid;
+                    return !card.isEmpty() && card.expiryDate().equals(currentState().cardData().cardExpiryDate())
+                        && card.cvv().equals(currentState().cardData().cardCvv()) ? card.accountId() : "";
+
                 } catch (Exception e) {
                     logger.error("Card validation failed for transaction: {}", currentState().transactionId(), e);
-                    return false;
+                    return "";
                 }
             })
-            .andThen(Boolean.class, isValid -> {
-                if (!isValid) {
+            .andThen(String.class, accountId -> {
+                if (accountId.isEmpty()) {
                     logger.info("Card validation failed for transaction: {}", currentState().transactionId());
                     var updatedState = currentState().withAuthResult(
                         "",
@@ -61,22 +53,16 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                     return effects().updateState(updatedState).end();
                 }
                 logger.info("Card validation successful for transaction: {}", currentState().transactionId());
-                return effects().transitionTo("authorize-transaction");
+                return effects().transitionTo("authorize-transaction", accountId);
             });
             
         var authorizeTransactionStep = step("authorize-transaction")
-            .call(() -> {
+            .call(String.class, accountId -> {
                 logger.info("Authorizing transaction: {}", currentState().transactionId());
                 try {
-                    // Get the card to find the associated account
-                    var card = componentClient
-                        .forEventSourcedEntity(currentState().cardData().cardPan())
-                        .method(CardEntity::getCard)
-                        .invoke();
-
                     // Authorize transaction with the account service
                     var authRequest = AuthorizeTransactionRequest.newBuilder()
-                        .setAccountId(card.accountId())
+                        .setAccountId(accountId)
                         .setTransactionId(currentState().transactionId())
                         .setAmount(currentState().cardData().amount())
                         .build();
@@ -85,7 +71,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                     
                     // Map protobuf response to serializable record
                     return new AuthorizationResult(
-                        card.accountId(),
+                        accountId,
                         protoResponse.getAuthCode(),
                         mapProtoAuthResult(protoResponse.getAuthResult()),
                         mapProtoAuthStatus(protoResponse.getAuthStatus())
@@ -117,8 +103,18 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                 }
 
                 // If authorized successfully, pause and wait for external capture trigger
-                return effects().updateState(updatedState).pause();
+                return effects().updateState(updatedState).transitionTo("scheduled-capture");
             });
+
+        var timerStep = step("scheduled-capture")
+                .call(() -> {
+                    var deferredCall = componentClient
+                            .forWorkflow(commandContext().workflowId())
+                            .method(TransactionWorkflow::captureTransaction)
+                            .deferred();
+                    timers().createSingleTimer("capture-timer-" + commandContext().workflowId(), Duration.ofSeconds(10L), deferredCall);
+                })
+                .andThen(() -> effects().pause());
 
         var captureTransactionStep = step("capture-transaction")
             .call(() -> {
@@ -147,7 +143,8 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
             .timeout(Duration.ofMinutes(5))
             .addStep(validateCardStep)
             .addStep(authorizeTransactionStep)
-            .addStep(captureTransactionStep);
+            .addStep(captureTransactionStep)
+            .addStep(timerStep);
     }
     
     public Effect<StartTransactionResult> startTransaction(StartTransactionRequest request) {
@@ -213,7 +210,6 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
     private TransactionState.AuthResult mapProtoAuthResult(AuthResult protoResult) {
         return switch (protoResult) {
             case AUTHORISED -> TransactionState.AuthResult.authorised;
-            case DECLINED -> TransactionState.AuthResult.declined;
             default -> TransactionState.AuthResult.declined;
         };
     }
@@ -225,7 +221,6 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
             case INSUFFICIENT_FUNDS -> TransactionState.AuthStatus.insufficient_funds;
             case ACCOUNT_CLOSED -> TransactionState.AuthStatus.account_closed;
             case ACCOUNT_NOT_FOUND -> TransactionState.AuthStatus.account_not_found;
-            case UNDISCLOSED -> TransactionState.AuthStatus.undiscosed;
             default -> TransactionState.AuthStatus.undiscosed;
         };
     }
