@@ -37,12 +37,26 @@ public class CardEntity extends EventSourcedEntity<CardState, CardEvent> {
         }
     }
 
+    public Effect<ApiCard> activate() {
+        if (currentState().isEmpty()) {
+            return effects().error("Card not found");
+        } else if (currentState().active()) {
+            return effects().reply(fromState(currentState())); // already active
+        } else {
+            CardState state = currentState();
+            return effects()
+                .persist(new CardEvent.Activated(state.pan(), state.accountId()))
+                .thenReply(this::fromState);
+        }
+    }
+
     private ApiCard fromState(CardState state) {
         return new ApiCard(
                 state.pan(),
                 state.expiryDate(),
                 state.cvv(),
-                state.accountId()
+                state.accountId(),
+                state.active()
         );
     }
 
@@ -50,14 +64,15 @@ public class CardEntity extends EventSourcedEntity<CardState, CardEvent> {
     public CardState applyEvent(CardEvent cardEvent) {
         return switch (cardEvent) {
             case CardEvent.Created created -> currentState().onCreate(created);
+            case CardEvent.Activated activated -> currentState().onActivated();
             default -> currentState();
         };
     }
 
-    public record ApiCard(String pan, String expiryDate, String cvv, String accountId) {
+    public record ApiCard(String pan, String expiryDate, String cvv, String accountId, boolean active) {
 
         public static ApiCard empty() {
-            return new ApiCard("", "", "", "");
+            return new ApiCard("", "", "", "", false);
         }
 
         public boolean isEmpty() {

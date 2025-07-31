@@ -15,7 +15,8 @@ Use the following grpcurl commands to interact with the CardGrpcEndpoint service
 # Create Card
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-123"}' \
   localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/CreateCard
-
+```
+```bash
 # Get Card
 grpcurl -plaintext -d '{"pan": "4111111111111111"}' \
   localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/GetCard
@@ -28,7 +29,7 @@ grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv"
 #### Cloud Deployment
 ```bash
 # Create Card
-grpcurl -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-1234"}' \
+grpcurl -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-123"}' \
   icy-salad-1140.gcp-us-east1.akka.services:443 com.example.akka.payments.api.CardGrpcEndpoint/CreateCard
 ```
 

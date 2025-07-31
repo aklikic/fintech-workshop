@@ -8,24 +8,18 @@ import com.example.akka.account.api.AccountGrpcEndpointClient;
 
 @Setup
 public class Bootstrap implements ServiceSetup {
-
-    private final GrpcClientProvider grpcClientProvider;
-
-    public Bootstrap(GrpcClientProvider grpcClientProvider) {
-        this.grpcClientProvider = grpcClientProvider;
-    }
-
-    @Override
-    public DependencyProvider createDependencyProvider() {
-        AccountGrpcEndpointClient accountClient = grpcClientProvider.grpcClientFor(AccountGrpcEndpointClient.class, "corebanking");;
-        return new DependencyProvider() {
-            @Override
-            public <T> T getDependency(Class<T> cls) {
-                if (cls.equals(AccountGrpcEndpointClient.class)) {
-                    return (T) accountClient;
-                }
-                return null;
-            }
-        };
-    }
+  
+  private final GrpcClientProvider grpcClientProvider;
+  
+  public Bootstrap(GrpcClientProvider grpcClientProvider) {
+    this.grpcClientProvider = grpcClientProvider;
+  }
+  
+  @Override
+  public DependencyProvider createDependencyProvider() {
+    AccountGrpcEndpointClient accountClient = grpcClientProvider.grpcClientFor(AccountGrpcEndpointClient.class, "corebanking");
+    ;
+    return DependencyProvider.single(accountClient);
+    
+  }
 }

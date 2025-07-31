@@ -21,15 +21,15 @@ public class CardGrpcEndpointImpl implements CardGrpcEndpoint {
 
     @Override
     public Card createCard(Card in) {
-        logger.info("Creating card {}", in.getPan());
+        logger.info("Creating card {} for account id {}", in.getPan(), in.getAccountId());
         try {
-            var res = componentClient.forEventSourcedEntity(in.getPan()).method(CardEntity::createCard).invoke(new CardEntity.ApiCard(in.getPan(), in.getExpiryDate(), in.getCvv(), in.getAccountId()));
+            var res = componentClient.forEventSourcedEntity(in.getPan())
+                .method(CardEntity::createCard)
+                .invoke(new CardEntity.ApiCard(in.getPan(), in.getExpiryDate(), in.getCvv(), in.getAccountId(), false));
             return fromState(res);
         }catch (Exception e){
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
         }
-
-
     }
 
     @Override
