@@ -20,7 +20,8 @@ grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv"
 # Get Card
 grpcurl -plaintext -d '{"pan": "4111111111111111"}' \
   localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/GetCard
-
+```
+```bash
 # Validate Card
 grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123"}' \
   localhost:9001 com.example.akka.payments.api.CardGrpcEndpoint/ValidateCard
@@ -32,12 +33,12 @@ grpcurl -plaintext -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv"
 grpcurl -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123", "account_id": "account-123"}' \
   icy-salad-1140.gcp-us-east1.akka.services:443 com.example.akka.payments.api.CardGrpcEndpoint/CreateCard
 ```
-
-
+```bash
 # Get Card
 grpcurl -d '{"pan": "4111111111111111"}' \
   icy-salad-1140.gcp-us-east1.akka.services:443 com.example.akka.payments.api.CardGrpcEndpoint/GetCard
-
+```
+```bash
 # Validate Card
 grpcurl -d '{"pan": "4111111111111111", "expiry_date": "12/25", "cvv": "123"}' \
   icy-salad-1140.gcp-us-east1.akka.services:443 com.example.akka.payments.api.CardGrpcEndpoint/ValidateCard
@@ -60,11 +61,13 @@ grpcurl -plaintext -d '{
   "currency": "USD"
 }' \
   localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/StartTransaction
-
+```
+```bash
 # Get Transaction
 grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
   localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/GetTransaction
-
+```
+```bash
 # Capture Transaction
 grpcurl -plaintext -d '{"idempotency_key": "unique-key-123"}' \
   localhost:9001 com.example.akka.payments.api.TransactionGrpcEndpoint/CaptureTransaction
