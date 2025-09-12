@@ -57,13 +57,11 @@ message ExpenditureRequest {
   string account_id = 1;
 }
 
-message
-    CaptureTransactionResponse {
+message CaptureTransactionResponse {
   bool success = 1;
 }
 
-message
-    ExpenditureResponse {
+message ExpenditureResponse {
   string account_id = 1;
   int32 money_in = 2;
   int32 money_out = 3;

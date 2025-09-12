@@ -10,11 +10,11 @@ import com.example.akka.corebanking.domain.TransactionHistory;
 
 @ComponentId("transaction-history-builder")
 @Consume.FromEventSourcedEntity(AccountEntity.class)
-public class TransactionHistoryWorker extends Consumer {
+public class TransactionHistoryBuilder extends Consumer {
   
   private final ComponentClient componentClient;
   
-  public TransactionHistoryWorker(ComponentClient componentClient) {
+  public TransactionHistoryBuilder(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
   
@@ -23,10 +23,7 @@ public class TransactionHistoryWorker extends Consumer {
     var accountId = messageContext().eventSubject().get();
     
     return switch (event) {
-      
-      case AccountEvent.Created created -> effects().done();
-      
-      case AccountEvent.TransAuthorisationAdded auth -> {
+       case AccountEvent.TransAuthorisationAdded auth -> {
         TransactionHistory.TransactionHistoryId id = new TransactionHistory.TransactionHistoryId(auth.transactionId(), accountId);
         componentClient.forKeyValueEntity(id.toString())
             .method(TransactionHistoryEntity::onAuth)
@@ -41,6 +38,7 @@ public class TransactionHistoryWorker extends Consumer {
             .invoke();
         yield effects().done();
       }
+      default -> effects().done();
     };
     
   }

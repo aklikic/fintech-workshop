@@ -19,22 +19,14 @@ public class AccountEventsConsumer extends Consumer {
     this.componentClient = componentClient;
   }
   
-  public Effect onEvent(PublicAccountEvent event) {
-    
-    return switch (event) {
-      case PublicAccountEvent.Created e -> {
-        logger.info("Received a public account event {} for account id {}", event.getClass().getSimpleName(), e.accountId());
-        
-        var accountToCard = componentClient.forKeyValueEntity(e.accountId())
-                .method(AccountToCardEntity::getAccountToCard)
-                    .invoke();
-        
-        componentClient.forEventSourcedEntity(accountToCard.pan())
-            .method(CardEntity::activate)
-            .invoke();
-        
-        yield effects().done();
-      }
-    };
+  public Effect onEvent(PublicAccountEvent.Created event) {
+      logger.info("Received a public account event {} for account id {}", event.getClass().getSimpleName(), event.accountId());
+      var accountToCard = componentClient.forKeyValueEntity(event.accountId())
+              .method(AccountToCardEntity::getAccountToCard)
+              .invoke();
+      componentClient.forEventSourcedEntity(accountToCard.pan())
+              .method(CardEntity::activate)
+              .invoke();
+      return effects().done();
   }
 }

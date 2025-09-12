@@ -19,7 +19,7 @@ public class CardStateTest {
 
     @Test
     public void testCardStateCreation() {
-        CardState state = new CardState("1234567890123456", "12/27", "123", "account123");
+        CardState state = new CardState("1234567890123456", "12/27", "123", "account123", true);
         
         assertEquals("1234567890123456", state.pan());
         assertEquals("12/27", state.expiryDate());
@@ -30,13 +30,13 @@ public class CardStateTest {
 
     @Test
     public void testIsEmptyReturnsTrueForEmptyPan() {
-        CardState state = new CardState("", "12/27", "123", "account123");
+        CardState state = new CardState("", "12/27", "123", "account123", true);
         assertTrue(state.isEmpty());
     }
 
     @Test
     public void testIsEmptyReturnsFalseForNonEmptyPan() {
-        CardState state = new CardState("1234567890123456", "", "", "");
+        CardState state = new CardState("1234567890123456", "", "", "", true);
         assertFalse(state.isEmpty());
     }
 
@@ -56,7 +56,7 @@ public class CardStateTest {
 
     @Test
     public void testOnCreateFromExistingState() {
-        CardState existingState = new CardState("old_pan", "old_date", "old_cvv", "old_account");
+        CardState existingState = new CardState("old_pan", "old_date", "old_cvv", "old_account", true);
         CardEvent.Created event = new CardEvent.Created("new_pan", "new_date", "new_cvv", "new_account");
         
         CardState newState = existingState.onCreate(event);
@@ -69,7 +69,7 @@ public class CardStateTest {
 
     @Test
     public void testCardStateImmutability() {
-        CardState originalState = new CardState("1234567890123456", "12/27", "123", "account123");
+        CardState originalState = new CardState("1234567890123456", "12/27", "123", "account123", true);
         CardEvent.Created event = new CardEvent.Created("9876543210987654", "01/28", "456", "account456");
         
         CardState newState = originalState.onCreate(event);
