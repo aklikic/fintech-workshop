@@ -22,5 +22,6 @@
     <module>payments</module>
     <module>corebanking</module>
     <module>ui</module>
+    <module>agentic</module>
   </modules>
 </project>
