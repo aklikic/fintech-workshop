@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://akka.io/favicon.ico" type="image/x-icon" />
+    <title>💳 Fintech Workshop API Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- gRPC-Web libraries -->
+    <script src="https://unpkg.com/google-protobuf@3.21.2/google-protobuf.js"></script>
+    <script src="https://unpkg.com/grpc-web@1.4.2/index.js"></script>
+</head>
+<body>
+    <div class="top-bar"></div>
+    <div class="container">
+        <header>
+            <h1>💳 Fintech Workshop API Interface</h1>
+            <p class="subtitle">Interact with Akka SDK card payment services</p>
+        </header>
+
+        <main>
+            <section class="section">
+                <h2>Fintech Operations</h2>
+                <div class="tabs">
+                    <button class="tab-button active" onclick="openTab(event, 'accountTab')">Account</button>
+                    <button class="tab-button" onclick="openTab(event, 'cardTab')">Card</button>
+                    <button class="tab-button" onclick="openTab(event, 'transactionTab')">Transaction</button>
+                </div>
+
+                <div id="accountTab" class="tab-content active">
+                    <div class="sub-tabs">
+                        <button class="sub-tab-button active" onclick="openSubTab(event, 'createAccountSubTab')">Create</button>
+                        <button class="sub-tab-button" onclick="openSubTab(event, 'listAccountsSubTab')">List</button>
+                    </div>
+
+                    <div id="createAccountSubTab" class="sub-tab-content active">
+                        <form id="createAccountForm">
+                            <div class="form-group">
+                                <label for="accountId">Account ID:</label>
+                                <input type="text" id="accountId" name="accountId" value="account-123" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="initialBalance">Initial Balance:</label>
+                                <input type="number" id="initialBalance" name="initialBalance" value="1000" required>
+                            </div>
+                            <button type="submit">Create Account</button>
+                        </form>
+                        <div id="createAccountResult" class="result"></div>
+                    </div>
+
+                    <div id="listAccountsSubTab" class="sub-tab-content">
+                        <div class="account-list-buttons">
+                            <button type="button" id="listAccountsBtn">Load All Accounts</button>
+                        </div>
+                        <div id="listAccountsResult" class="result"></div>
+                        <div id="accountsTableContainer" class="accounts-table-container" style="display: none;">
+                            <table id="accountsTable" class="accounts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Account ID</th>
+                                        <th>Available Balance</th>
+                                        <th>Posted Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accountsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cardTab" class="tab-content">
+                    <form id="createCardForm">
+                        <div class="form-group">
+                            <label for="cardPan">Card PAN:</label>
+                            <input type="text" id="cardPan" name="cardPan" value="4111111111111111" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardExpiry">Expiry Date:</label>
+                            <input type="text" id="cardExpiry" name="cardExpiry" value="12/25" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardCvv">CVV:</label>
+                            <input type="text" id="cardCvv" name="cardCvv" value="123" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardAccountId">Account ID:</label>
+                            <input type="text" id="cardAccountId" name="cardAccountId" value="account-123" required>
+                        </div>
+                        <button type="submit">Create Card</button>
+                    </form>
+                    <div id="createCardResult" class="result"></div>
+                </div>
+
+                <div id="transactionTab" class="tab-content">
+                    <div class="sub-tabs">
+                        <button class="sub-tab-button active" onclick="openSubTab(event, 'startTransactionSubTab')">Start</button>
+                        <button class="sub-tab-button" onclick="openSubTab(event, 'listTransactionsSubTab')">List</button>
+                    </div>
+
+                    <div id="startTransactionSubTab" class="sub-tab-content active">
+                        <form id="startTransactionForm">
+                            <div class="form-group">
+                                <label for="idempotencyKey">Idempotency Key:</label>
+                                <input type="text" id="idempotencyKey" name="idempotencyKey" value="unique-key-123" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionId">Transaction ID:</label>
+                                <input type="text" id="transactionId" name="transactionId" value="txn-456" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionCardPan">Card PAN:</label>
+                                <input type="text" id="transactionCardPan" name="transactionCardPan" value="4111111111111111" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionCardExpiry">Card Expiry:</label>
+                                <input type="text" id="transactionCardExpiry" name="transactionCardExpiry" value="12/25" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionCardCvv">Card CVV:</label>
+                                <input type="text" id="transactionCardCvv" name="transactionCardCvv" value="123" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="amount">Amount:</label>
+                                <input type="number" id="amount" name="amount" value="500" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="currency">Currency:</label>
+                                <input type="text" id="currency" name="currency" value="USD" required>
+                            </div>
+                            <div class="transaction-buttons">
+                                <button type="submit">Start Transaction</button>
+                            </div>
+                            <div id="startTransactionResult" class="result"></div>
+                        </form>
+                    </div>
+
+                    <div id="listTransactionsSubTab" class="sub-tab-content">
+                        <div class="form-group">
+                            <label for="accountIdForTransactions">Account ID:</label>
+                            <input type="text" id="accountIdForTransactions" name="accountIdForTransactions" value="account-123" required>
+                        </div>
+                        <div class="account-transaction-buttons">
+                            <button type="button" id="listTransactionsBtn">List Account Transactions</button>
+                        </div>
+                        <div id="listTransactionsResult" class="result"></div>
+                        <div id="transactionsTableContainer" class="transactions-table-container" style="display: none;">
+                            <table id="transactionsTable" class="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Idempotency Key</th>
+                                        <th>Auth Result</th>
+                                        <th>Auth Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by Akka SDK</p>
+        </footer>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Transaction Details</h3>
+                <span class="close" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="transactionDetails" class="transaction-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
