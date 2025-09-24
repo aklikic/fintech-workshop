@@ -26,7 +26,7 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
         logger.info("Starting transaction workflow for idempotency key: {}", request.getIdempotencyKey());
         
         try {
-            var workflowRequest = new TransactionWorkflow.StartTransactionRequest(
+            var workflowRequest = new TransactionWorkflow.AuthorizeTransactionRequest(
                 request.getIdempotencyKey(),
                 request.getTransactionId(),
                 request.getCardPan(),
@@ -38,7 +38,7 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             
             var result = componentClient
                 .forWorkflow(request.getIdempotencyKey())
-                .method(TransactionWorkflow::startTransaction)
+                .method(TransactionWorkflow::authorizeTransaction)
                 .invoke(workflowRequest);
             
             return StartTransactionResponse.newBuilder()
@@ -127,7 +127,7 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
         };
     }
     
-    private StartTransactionResult mapWorkflowResultToProtoResult(TransactionWorkflow.StartTransactionResult result) {
+    private StartTransactionResult mapWorkflowResultToProtoResult(TransactionWorkflow.StartAuthorizeTransactionResult result) {
         return switch (result) {
             case STARTED -> StartTransactionResult.STARTED;
             case ALREADY_EXISTS -> StartTransactionResult.ALREADY_EXISTS;
@@ -141,5 +141,35 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             case NOT_AUTHORIZED -> CaptureTransactionResult.NOT_AUTHORIZED;
             case ALREADY_CAPTURED -> CaptureTransactionResult.ALREADY_CAPTURED;
         };
+    }
+
+    @Override
+    public GetTransactionsByAccountResponse getTransactionsByAccount(GetTransactionsByAccountRequest request) {
+        logger.info("Getting transactions for account ID: {}", request.getAccountId());
+
+        try {
+            var result = componentClient
+                .forView()
+                .method(com.example.akka.payments.application.TransactionsByAccountView::getTransactionsByAccount)
+                .invoke(request.getAccountId());
+
+            var transactionSummaries = result.transactions().stream()
+                .map(transaction -> TransactionSummary.newBuilder()
+                    .setIdempotencyKey(transaction.idempotencyKey())
+                    .setTransactionId(transaction.transactionId())
+                    .setAccountId(transaction.accountId())
+                    .setAuthResult(transaction.authResult())
+                    .setAuthStatus(transaction.authStatus())
+                    .build())
+                .toList();
+
+            return GetTransactionsByAccountResponse.newBuilder()
+                .addAllTransactions(transactionSummaries)
+                .build();
+
+        } catch (Exception e) {
+            logger.error("Failed to get transactions for account: {}", request.getAccountId(), e);
+            return GetTransactionsByAccountResponse.newBuilder().build();
+        }
     }
 }

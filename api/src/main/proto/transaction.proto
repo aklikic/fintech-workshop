@@ -76,8 +76,25 @@ message Transaction {
   bool captured = 11;
 }
 
+message TransactionSummary {
+  string idempotency_key = 1;
+  string transaction_id = 2;
+  string account_id = 3;
+  string auth_result = 4;
+  string auth_status = 5;
+}
+
+message GetTransactionsByAccountRequest {
+  string account_id = 1;
+}
+
+message GetTransactionsByAccountResponse {
+  repeated TransactionSummary transactions = 1;
+}
+
 service TransactionGrpcEndpoint {
   rpc StartTransaction (StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc GetTransaction (GetTransactionRequest) returns (Transaction) {}
   rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
+  rpc GetTransactionsByAccount (GetTransactionsByAccountRequest) returns (GetTransactionsByAccountResponse) {}
 }

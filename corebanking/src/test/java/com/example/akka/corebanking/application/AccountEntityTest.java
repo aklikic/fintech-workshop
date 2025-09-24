@@ -2,6 +2,7 @@ package com.example.akka.corebanking.application;
 
 import akka.Done;
 import akka.javasdk.testkit.EventSourcedTestKit;
+import com.example.akka.corebanking.application.AccountEntity;
 import com.example.akka.corebanking.domain.AccountEvent;
 import com.example.akka.corebanking.domain.AccountState;
 import org.junit.jupiter.api.Test;

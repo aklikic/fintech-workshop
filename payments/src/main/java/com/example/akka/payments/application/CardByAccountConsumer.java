@@ -8,15 +8,15 @@ import com.example.akka.payments.domain.CardEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ComponentId("account-to-card-consumer")
+@ComponentId("account-to-card-mapping-consumer")
 @Consume.FromEventSourcedEntity(value = CardEntity.class)
-public class AccountToCardConsumer extends Consumer {
+public class CardByAccountConsumer extends Consumer {
   
-  private static final Logger logger = LoggerFactory.getLogger(AccountToCardConsumer.class);
+  private static final Logger logger = LoggerFactory.getLogger(CardByAccountConsumer.class);
   
   private ComponentClient componentClient;
   
-  public AccountToCardConsumer(ComponentClient componentClient) {
+  public CardByAccountConsumer(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
   
@@ -30,16 +30,16 @@ public class AccountToCardConsumer extends Consumer {
   
   private Effect onCardEventActivated(CardEvent.Activated e) {
     componentClient.forKeyValueEntity(e.accountId())
-        .method(AccountToCardEntity::activateCard)
+        .method(CardByAccountEntity::activateCard)
         .invoke();
     return effects().done();
   }
   
   private Effect onCardEventCreated(CardEvent.Created e) {
     
-    AccountToCardEntity.CreateCardCommand cmd = new AccountToCardEntity.CreateCardCommand(e.pan(), e.accountId());
+    CardByAccountEntity.CreateCardCommand cmd = new CardByAccountEntity.CreateCardCommand(e.pan(), e.accountId());
     componentClient.forKeyValueEntity(e.accountId())
-        .method(AccountToCardEntity::createCard)
+        .method(CardByAccountEntity::createCard)
         .invoke(cmd);
     
     return effects().done();

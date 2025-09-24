@@ -6,10 +6,11 @@ import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
 import com.example.akka.account.api.*;
 import com.example.akka.corebanking.application.AccountEntity;
-import com.example.akka.corebanking.application.TotalExpenditureView;
-import com.example.akka.corebanking.application.TransactionHistoryEntity;
+import com.example.akka.corebanking.application.AccountTotalExpenditureView;
+import com.example.akka.corebanking.application.AccountTransactionEntity;
+import com.example.akka.corebanking.application.AccountView;
 import com.example.akka.corebanking.domain.TotalExpenditure;
-import com.example.akka.corebanking.domain.TransactionHistory;
+import com.example.akka.corebanking.domain.AccountTransaction;
 import io.grpc.Status;
 import org.slf4j.Logger;
 
@@ -69,9 +70,9 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
         logger.info("Authorizing transaction {} for account {} amount {}",
                 in.getTransactionId(), in.getAccountId(), in.getAmount());
 
-        TransactionHistory.TransactionHistoryId trxId = new TransactionHistory.TransactionHistoryId(in.getTransactionId(), in.getAccountId());
+        AccountTransaction.AccountTransactionId trxId = new AccountTransaction.AccountTransactionId(in.getTransactionId(), in.getAccountId());
         var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-                .method(TransactionHistoryEntity::getTransaction)
+                .method(AccountTransactionEntity::getTransaction)
                 .invoke();
 
         if (transactionHistory.isPresent() && (transactionHistory.get().isAuthorized() || transactionHistory.get().isCaptured())) {
@@ -105,9 +106,9 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
     public CaptureTransactionResponse captureTransaction(CaptureTransactionRequest in) {
         logger.info("Capturing transaction {} for account {}", in.getTransactionId(), in.getAccountId());
 
-        TransactionHistory.TransactionHistoryId trxId = new TransactionHistory.TransactionHistoryId(in.getTransactionId(), in.getAccountId());
+        AccountTransaction.AccountTransactionId trxId = new AccountTransaction.AccountTransactionId(in.getTransactionId(), in.getAccountId());
         var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-                .method(TransactionHistoryEntity::getTransaction)
+                .method(AccountTransactionEntity::getTransaction)
                 .invoke();
 
         if (transactionHistory.isPresent() && transactionHistory.get().isCaptured()) {
@@ -132,12 +133,34 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
 
     @Override
     public ExpenditureResponse getExpenditure(ExpenditureRequest in) {
-        TotalExpenditure invoke = componentClient.forView().method(TotalExpenditureView::get).invoke(in.getAccountId());
+        TotalExpenditure invoke = componentClient.forView().method(AccountTotalExpenditureView::get).invoke(in.getAccountId());
         return ExpenditureResponse.newBuilder()
                 .setAccountId(invoke.accountId())
                 .setMoneyIn(invoke.moneyIn())
                 .setMoneyOut(invoke.moneyOut())
                 .build();
+    }
+
+    @Override
+    public GetAllAccountsResponse getAllAccounts(GetAllAccountsRequest in) {
+        logger.info("Getting all accounts");
+        try {
+            var accountList = componentClient.forView().method(AccountView::getAllAccounts).invoke();
+            var accounts = accountList.accounts().stream()
+                    .map(account -> Account.newBuilder()
+                            .setAccountId(account.accountId())
+                            .setAvailableBalance(account.availableBalance())
+                            .setPostedBalance(account.postedBalance())
+                            .build())
+                    .toList();
+
+            return GetAllAccountsResponse.newBuilder()
+                    .addAllAccounts(accounts)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to get all accounts: {}", e.getMessage());
+            throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
+        }
     }
 
     private Account fromState(AccountEntity.ApiAccount account) {

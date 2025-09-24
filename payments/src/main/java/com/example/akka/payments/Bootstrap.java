@@ -18,8 +18,8 @@ public class Bootstrap implements ServiceSetup {
   @Override
   public DependencyProvider createDependencyProvider() {
     AccountGrpcEndpointClient accountClient = grpcClientProvider.grpcClientFor(AccountGrpcEndpointClient.class, "corebanking");
-    ;
     return DependencyProvider.single(accountClient);
     
   }
+
 }

@@ -59,12 +59,12 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
     if (currentState().isEmpty()) {
       return effects().error("Account not found");
     }
-    
-    if (!currentState().getAuthorisation(transactionId).isPresent()) {
+    var maybeTrans = currentState().getAuthorisation(transactionId);
+    if (!maybeTrans.isPresent()) {
       //deduplication
       return effects().reply(Done.getInstance());
     }
-    var event = new AccountEvent.TransCaptureAdded(transactionId);
+    var event = new AccountEvent.TransCaptureAdded(transactionId, maybeTrans.get().amount());
     return effects().persist(event).thenReply(s -> Done.getInstance());
     
   }

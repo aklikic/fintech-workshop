@@ -6,15 +6,15 @@ import akka.javasdk.annotations.Consume;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.consumer.Consumer;
 import com.example.akka.corebanking.domain.AccountEvent;
-import com.example.akka.corebanking.domain.TransactionHistory;
+import com.example.akka.corebanking.domain.AccountTransaction;
 
-@ComponentId("transaction-history-builder")
+@ComponentId("account-transaction-builder")
 @Consume.FromEventSourcedEntity(AccountEntity.class)
-public class TransactionHistoryBuilder extends Consumer {
+public class AccountTransactionBuilder extends Consumer {
   
   private final ComponentClient componentClient;
   
-  public TransactionHistoryBuilder(ComponentClient componentClient) {
+  public AccountTransactionBuilder(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
   
@@ -24,17 +24,17 @@ public class TransactionHistoryBuilder extends Consumer {
     
     return switch (event) {
        case AccountEvent.TransAuthorisationAdded auth -> {
-        TransactionHistory.TransactionHistoryId id = new TransactionHistory.TransactionHistoryId(auth.transactionId(), accountId);
+        AccountTransaction.AccountTransactionId id = new AccountTransaction.AccountTransactionId(auth.transactionId(), accountId);
         componentClient.forKeyValueEntity(id.toString())
-            .method(TransactionHistoryEntity::onAuth)
+            .method(AccountTransactionEntity::onAuth)
             .invoke(auth.authCode());
         yield effects().done();
       }
       
       case AccountEvent.TransCaptureAdded auth -> {
-        TransactionHistory.TransactionHistoryId id = new TransactionHistory.TransactionHistoryId(auth.transactionId(), accountId);
+        AccountTransaction.AccountTransactionId id = new AccountTransaction.AccountTransactionId(auth.transactionId(), accountId);
         componentClient.forKeyValueEntity(id.toString())
-            .method(TransactionHistoryEntity::onCapture)
+            .method(AccountTransactionEntity::onCapture)
             .invoke();
         yield effects().done();
       }

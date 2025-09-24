@@ -29,7 +29,7 @@ public class CardEntity extends EventSourcedEntity<CardState, CardEvent> {
 
     }
 
-    public Effect<ApiCard> getCard() {
+    public ReadOnlyEffect<ApiCard> getCard() {
         if (currentState().isEmpty()) {
             return effects().error("Card not found");
         } else {

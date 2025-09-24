@@ -1,5 +1,7 @@
 package com.example.akka.corebanking.domain;
 
+import com.example.akka.corebanking.domain.AccountEvent;
+import com.example.akka.corebanking.domain.AccountState;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

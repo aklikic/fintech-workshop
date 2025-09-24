@@ -5,8 +5,10 @@ import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.keyvalueentity.KeyValueEntity;
 import com.example.akka.payments.domain.AccountToCard;
 
-@ComponentId("account-to-card-entity")
-public class AccountToCardEntity extends KeyValueEntity<AccountToCard> {
+import java.util.Optional;
+
+@ComponentId("account-to-card-mapping-entity")
+public class CardByAccountEntity extends KeyValueEntity<AccountToCard> {
   
   @Override
   public AccountToCard emptyState() {
@@ -25,8 +27,10 @@ public class AccountToCardEntity extends KeyValueEntity<AccountToCard> {
         .thenReply(Done.getInstance());
   }
   
-  public Effect<AccountToCard> getAccountToCard() {
-    return effects().reply(currentState());
+  public ReadOnlyEffect<Optional<AccountToCard>> getAccountToCard() {
+      if(currentState().accountId().isEmpty())
+          return effects().reply(Optional.empty());
+      return effects().reply(Optional.of(currentState()));
   }
   
   public record CreateCardCommand(String pan, String accountId) {

@@ -7,6 +7,6 @@ public sealed interface AccountEvent {
   record TransAuthorisationAdded(String transactionId, int amount, String authCode) implements AccountEvent {
   }
   
-  record TransCaptureAdded(String transactionId) implements AccountEvent {
+  record TransCaptureAdded(String transactionId, int amount) implements AccountEvent {
   }
 }

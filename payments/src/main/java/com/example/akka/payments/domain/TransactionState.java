@@ -18,8 +18,25 @@ public record TransactionState(
     public boolean isEmpty() {
         return idempotencyKey.isEmpty();
     }
-    
-    public TransactionState withAuthResult(String accountId, String authCode, AuthResult authResult, AuthStatus authStatus) {
+
+    public TransactionState init(String idempotencyKey, String transactionId, CardData cardData) {
+        return new TransactionState(
+                idempotencyKey,
+                transactionId,
+                cardData,
+                "",
+                "",
+                TransactionState.AuthResult.declined,
+                TransactionState.AuthStatus.ok,
+                false
+        );
+    }
+
+    public TransactionState withCardValid(String accountId) {
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
+    }
+
+    public TransactionState withAuthResult(String authCode, AuthResult authResult, AuthStatus authStatus) {
         return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
     }
     

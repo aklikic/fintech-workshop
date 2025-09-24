@@ -67,10 +67,19 @@ message ExpenditureResponse {
   int32 money_out = 3;
 }
 
+message GetAllAccountsRequest {
+  // Empty request for getting all accounts
+}
+
+message GetAllAccountsResponse {
+  repeated Account accounts = 1;
+}
+
 service AccountGrpcEndpoint {
   rpc CreateAccount (CreateAccountRequest) returns (Account) {}
   rpc GetAccount (GetAccountRequest) returns (Account) {}
   rpc AuthorizeTransaction (AuthorizeTransactionRequest) returns (AuthorizeTransactionResponse) {}
   rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
   rpc GetExpenditure (ExpenditureRequest) returns (ExpenditureResponse) {}
+  rpc GetAllAccounts (GetAllAccountsRequest) returns (GetAllAccountsResponse) {}
 }

@@ -9,8 +9,8 @@ import akka.javasdk.view.View;
 import com.example.akka.corebanking.domain.AccountEvent;
 import com.example.akka.corebanking.domain.TotalExpenditure;
 
-@ComponentId("total-expenditure-view")
-public class TotalExpenditureView extends View {
+@ComponentId("account-total-expenditure-view")
+public class AccountTotalExpenditureView extends View {
   
   @Consume.FromEventSourcedEntity(value = AccountEntity.class)
   public static class Updater extends TableUpdater<TotalExpenditure> {

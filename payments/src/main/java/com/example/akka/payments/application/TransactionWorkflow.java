@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @ComponentId("transaction-workflow")
 public class TransactionWorkflow extends Workflow<TransactionState> {
@@ -21,190 +22,173 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
         this.componentClient = componentClient;
         this.accountClient = accountClient;
     }
-    
+
     @Override
-    public WorkflowDef<TransactionState> definition() {
-        var validateCardStep = step("validate-card")
-            .call(() -> {
-                logger.info("Validating card for transaction: {}", currentState().transactionId());
-                try {
-                    var card = componentClient
-                        .forEventSourcedEntity(currentState().cardData().cardPan())
-                        .method(CardEntity::getCard)
-                        .invoke();
-                    
-                    return !card.isEmpty() && card.expiryDate().equals(currentState().cardData().cardExpiryDate())
-                        && card.cvv().equals(currentState().cardData().cardCvv()) ? card.accountId() : "";
-
-                } catch (Exception e) {
-                    logger.error("Card validation failed for transaction: {}", currentState().transactionId(), e);
-                    return "";
-                }
-            })
-            .andThen(String.class, accountId -> {
-                if (accountId.isEmpty()) {
-                    logger.info("Card validation failed for transaction: {}", currentState().transactionId());
-                    var updatedState = currentState().withAuthResult(
-                        "",
-                        "",
-                        TransactionState.AuthResult.declined,
-                        TransactionState.AuthStatus.card_not_found
-                    );
-                    return effects().updateState(updatedState).end();
-                }
-                logger.info("Card validation successful for transaction: {}", currentState().transactionId());
-                return effects().transitionTo("authorize-transaction", accountId);
-            });
-            
-        var authorizeTransactionStep = step("authorize-transaction")
-            .call(String.class, accountId -> {
-                logger.info("Authorizing transaction: {}", currentState().transactionId());
-                try {
-                    // Authorize transaction with the account service
-                    var authRequest = AuthorizeTransactionRequest.newBuilder()
-                        .setAccountId(accountId)
-                        .setTransactionId(currentState().transactionId())
-                        .setAmount(currentState().cardData().amount())
-                        .build();
-
-                    var protoResponse = accountClient.authorizeTransaction().invoke(authRequest);
-                    
-                    // Map protobuf response to serializable record
-                    return new AuthorizationResult(
-                        accountId,
-                        protoResponse.getAuthCode(),
-                        mapProtoAuthResult(protoResponse.getAuthResult()),
-                        mapProtoAuthStatus(protoResponse.getAuthStatus())
-                    );
-                } catch (Exception e) {
-                    logger.error("Authorization failed for transaction: {}", currentState().transactionId(), e);
-                    return new AuthorizationResult(
-                        "",
-                        "",
-                        TransactionState.AuthResult.declined,
-                        TransactionState.AuthStatus.undiscosed
-                    );
-                }
-            })
-            .andThen(AuthorizationResult.class, response -> {
-                logger.info("Authorization result for transaction {}: {} - {}",
-                           currentState().transactionId(), response.authResult(), response.authStatus());
-
-                var updatedState = currentState().withAuthResult(
-                    response.accountId(),
-                    response.authCode(),
-                    response.authResult(),
-                    response.authStatus()
-                );
-
-                // If authorization failed, end the workflow
-                if (response.authResult() == TransactionState.AuthResult.declined) {
-                    return effects().updateState(updatedState).end();
-                }
-
-                // If authorized successfully, pause and wait for external capture trigger
-                return effects().updateState(updatedState).transitionTo("scheduled-capture");
-            });
-
-        var timerStep = step("scheduled-capture")
-                .call(() -> {
-                    var deferredCall = componentClient
-                            .forWorkflow(commandContext().workflowId())
-                            .method(TransactionWorkflow::captureTransaction)
-                            .deferred();
-                    timers().createSingleTimer("capture-timer-" + commandContext().workflowId(), Duration.ofSeconds(10L), deferredCall);
-                })
-                .andThen(() -> effects().pause());
-
-        var captureTransactionStep = step("capture-transaction")
-            .call(() -> {
-                logger.info("Capturing transaction: {}", currentState().transactionId());
-                try {
-                    // Use stored accountId from authorization step
-                    var captureRequest = CaptureTransactionRequest.newBuilder()
-                        .setAccountId(currentState().accountId())
-                        .setTransactionId(currentState().transactionId())
-                        .build();
-
-                    var response = accountClient.captureTransaction().invoke(captureRequest);
-                    return response.getSuccess();
-                } catch (Exception e) {
-                    logger.error("Capture failed for transaction: {}", currentState().transactionId(), e);
-                    return false;
-                }
-            })
-            .andThen(Boolean.class, success -> {
-                logger.info("Capture result for transaction {}: {}", currentState().transactionId(), success);
-                var updatedState = currentState().withCaptured(success);
-                return effects().updateState(updatedState).end();
-            });
-
-        return workflow()
-            .timeout(Duration.ofMinutes(5))
-            .addStep(validateCardStep)
-            .addStep(authorizeTransactionStep)
-            .addStep(captureTransactionStep)
-            .addStep(timerStep);
+    public TransactionState emptyState() {
+        return TransactionState.empty();
     }
-    
-    public Effect<StartTransactionResult> startTransaction(StartTransactionRequest request) {
+
+    public Effect<StartAuthorizeTransactionResult> authorizeTransaction(AuthorizeTransactionRequest request) {
         logger.info("Starting transaction workflow for idempotency key: {}", request.idempotencyKey());
-        
+
         if (currentState() != null && !currentState().isEmpty()) {
-            return effects().reply(StartTransactionResult.ALREADY_EXISTS);
+            return effects().reply(StartAuthorizeTransactionResult.ALREADY_EXISTS);
         }
-        
+
         var cardData = new TransactionState.CardData(
-            request.cardPan(),
-            request.cardExpiryDate(),
-            request.cardCvv(),
-            request.amount(),
-            request.currency()
+                request.cardPan(),
+                request.cardExpiryDate(),
+                request.cardCvv(),
+                request.amount(),
+                request.currency()
         );
-        
-        var initialState = new TransactionState(
-            request.idempotencyKey(),
-            request.transactionId(),
-            cardData,
-            "",
-            "",
-            TransactionState.AuthResult.declined,
-            TransactionState.AuthStatus.ok,
-            false
-        );
-        
+
+        var initialState = currentState().init(request.idempotencyKey(), request.transactionId(), cardData);
+
         return effects()
-            .updateState(initialState)
-            .transitionTo("validate-card")
-            .thenReply(StartTransactionResult.STARTED);
+                .updateState(initialState)
+                .transitionTo(TransactionWorkflow::validateCardStep)
+                .thenReply(StartAuthorizeTransactionResult.STARTED);
     }
-    
+
     public Effect<CaptureTransactionResult> captureTransaction() {
-        logger.info("Capture transaction requested for transaction: {}", 
-                   currentState() != null ? currentState().transactionId() : "unknown");
-        
+        logger.info("Capture transaction requested for transaction: {}",
+                currentState() != null ? currentState().transactionId() : "unknown");
+
         if (currentState() == null || currentState().isEmpty()) {
             return effects().reply(CaptureTransactionResult.TRANSACTION_NOT_FOUND);
         }
-        
+
         if (currentState().authResult() != TransactionState.AuthResult.authorised) {
             return effects().reply(CaptureTransactionResult.NOT_AUTHORIZED);
         }
-        
+
         if (currentState().captured()) {
             return effects().reply(CaptureTransactionResult.ALREADY_CAPTURED);
         }
-        
+
         return effects()
-            .transitionTo("capture-transaction")
-            .thenReply(CaptureTransactionResult.CAPTURE_STARTED);
+                .transitionTo(TransactionWorkflow::captureTransactionStep)
+                .thenReply(CaptureTransactionResult.CAPTURE_STARTED);
     }
-    
+
     public ReadOnlyEffect<TransactionState> getTransaction() {
         if (currentState() == null || currentState().isEmpty()) {
             return effects().error("Transaction not found");
         }
         return effects().reply(currentState());
+    }
+
+    @Override
+    public WorkflowSettings settings() {
+        return WorkflowSettings.builder()
+                .defaultStepTimeout(Duration.ofMinutes(5))
+                .build();
+    }
+
+    private StepEffect validateCardStep() {
+        logger.info("Validating card for transaction: {}", currentState().transactionId());
+        Optional<String> accountId = Optional.empty();
+        try {
+            var card = componentClient
+                    .forEventSourcedEntity(currentState().cardData().cardPan())
+                    .method(CardEntity::getCard)
+                    .invoke();
+
+            if(!card.isEmpty() && card.expiryDate().equals(currentState().cardData().cardExpiryDate())
+                    && card.cvv().equals(currentState().cardData().cardCvv())){
+                accountId = Optional.of(card.accountId());
+            }
+
+        } catch (Exception e) {
+            logger.error("Card validation failed for transaction: {}", currentState().transactionId(), e);
+        }
+
+        if (accountId.isEmpty()) {
+            logger.info("Card validation failed for transaction: {}", currentState().transactionId());
+            var updatedState = currentState().withAuthResult(
+                    "",
+                    TransactionState.AuthResult.declined,
+                    TransactionState.AuthStatus.card_not_found
+            );
+            return stepEffects()
+                    .updateState(updatedState)
+                    .thenEnd();
+        }else{
+            logger.info("Card validation successful for transaction: {}", currentState().transactionId());
+            var updatedState = currentState().withCardValid(accountId.get());
+            return stepEffects()
+                    .updateState(updatedState)
+                    .thenTransitionTo(TransactionWorkflow::authorizeTransactionStep);
+        }
+    }
+
+    private StepEffect authorizeTransactionStep() {
+        logger.info("Authorizing transaction: {}", currentState().transactionId());
+        var authResult = TransactionState.AuthResult.declined;
+        var authStatus = TransactionState.AuthStatus.undiscosed;
+        var authCode = "N/A";
+        try {
+            // Authorize transaction with the account service
+            var authRequest = com.example.akka.account.api.AuthorizeTransactionRequest.newBuilder()
+                    .setAccountId(currentState().accountId())
+                    .setTransactionId(currentState().transactionId())
+                    .setAmount(currentState().cardData().amount())
+                    .build();
+
+            var protoResponse = accountClient.authorizeTransaction().invoke(authRequest);
+            authResult = mapProtoAuthResult(protoResponse.getAuthResult());
+            authStatus = mapProtoAuthStatus(protoResponse.getAuthStatus());
+            authCode = protoResponse.getAuthCode();
+        } catch (Exception e) {
+            logger.error("Authorization failed for transaction: {}", currentState().transactionId(), e);
+        }
+
+        logger.info("Authorization result for transaction {}: {} - {}",
+                currentState().transactionId(), authResult, authStatus);
+
+        var updatedState = currentState().withAuthResult( authCode, authResult, authStatus);
+
+        // If authorization failed, end the workflow
+        if (authResult == TransactionState.AuthResult.declined) {
+            return stepEffects().updateState(updatedState).thenEnd();
+        }
+
+        // If authorized successfully, pause and wait for external capture trigger
+        return stepEffects()
+                .updateState(updatedState)
+                .thenTransitionTo(TransactionWorkflow::scheduleCapture);
+    }
+
+    private StepEffect scheduleCapture() {
+        var deferredCall = componentClient
+                .forWorkflow(commandContext().workflowId())
+                .method(TransactionWorkflow::captureTransaction)
+                .deferred();
+        timers().createSingleTimer("capture-scheduler-" + commandContext().workflowId(), Duration.ofMinutes(1), deferredCall);
+        return stepEffects().thenPause();
+    }
+    private StepEffect captureTransactionStep() {
+        logger.info("Capturing transaction: {}", currentState().transactionId());
+        var success = false;
+        try {
+            // Use stored accountId from authorization step
+            var captureRequest = CaptureTransactionRequest.newBuilder()
+                    .setAccountId(currentState().accountId())
+                    .setTransactionId(currentState().transactionId())
+                    .build();
+
+            var response = accountClient.captureTransaction().invoke(captureRequest);
+            success = response.getSuccess();
+        } catch (Exception e) {
+            logger.error("Capture failed for transaction: {}", currentState().transactionId(), e);
+        }
+
+        logger.info("Capture result for transaction {}: {}", currentState().transactionId(), success);
+        var updatedState = currentState().withCaptured(success);
+        return stepEffects()
+                .updateState(updatedState)
+                .thenEnd();
     }
     
     private TransactionState.AuthResult mapProtoAuthResult(AuthResult protoResult) {
@@ -225,7 +209,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
         };
     }
     
-    public record StartTransactionRequest(
+    public record AuthorizeTransactionRequest(
         String idempotencyKey,
         String transactionId,
         String cardPan,
@@ -234,15 +218,9 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
         int amount,
         String currency
     ) {}
+
     
-    public record AuthorizationResult(
-        String accountId,
-        String authCode,
-        TransactionState.AuthResult authResult,
-        TransactionState.AuthStatus authStatus
-    ) {}
-    
-    public enum StartTransactionResult {
+    public enum StartAuthorizeTransactionResult {
         STARTED,
         ALREADY_EXISTS
     }

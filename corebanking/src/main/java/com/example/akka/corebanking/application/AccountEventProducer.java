@@ -10,13 +10,13 @@ import com.example.akka.corebanking.domain.AccountEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ComponentId("account-events-service")
+@ComponentId("account-event-producer")
 @Consume.FromEventSourcedEntity(AccountEntity.class)
-@Produce.ServiceStream(id = "corebanking_public_events")
+@Produce.ServiceStream(id = "account_public_events")
 @Acl(allow = @Acl.Matcher(service = "*"))
-public class AccountEventsService extends Consumer {
+public class AccountEventProducer extends Consumer {
   
-  private final Logger logger = LoggerFactory.getLogger(AccountEventsService.class);
+  private final Logger logger = LoggerFactory.getLogger(AccountEventProducer.class);
   
   public Effect onEvent(AccountEvent evt) {
     return switch (evt) {
