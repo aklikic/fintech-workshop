@@ -1,4 +1,4 @@
-package com.example.akka.ui.api.models;
+package com.example.akka.backoffice.api.models;
 
 public class CardModels {
 

@@ -1,4 +1,4 @@
-package com.example.akka.ui.api.models;
+package com.example.akka.backoffice.api.models;
 
 public class TransactionModels {
 
@@ -15,6 +15,8 @@ public class TransactionModels {
 
     public record CaptureTransactionResponse(String result) {}
 
+    public record CancelTransactionResponse(String result) {}
+
     public record Transaction(
             String idempotencyKey,
             String transactionId,
@@ -26,14 +28,21 @@ public class TransactionModels {
             String authCode,
             String authResult,
             String authStatus,
-            boolean captured) {}
+            String captureResult,
+            String captureStatus,
+            String cancelResult,
+            String cancelStatus) {}
 
     public record TransactionSummary(
             String idempotencyKey,
             String transactionId,
             String accountId,
             String authResult,
-            String authStatus) {}
+            String authStatus,
+            String captureResult,
+            String captureStatus,
+            String cancelResult,
+            String cancelStatus) {}
 
     public record TransactionsByAccountResponse(java.util.List<TransactionSummary> transactions) {}
 }

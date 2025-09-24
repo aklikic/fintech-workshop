@@ -88,15 +88,36 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
         logger.info("Capturing transaction {} for account {}", in.getTransactionId(), in.getAccountId());
 
         try {
-            componentClient.forEventSourcedEntity(in.getAccountId())
+            var result = componentClient.forEventSourcedEntity(in.getAccountId())
                     .method(AccountEntity::captureTransaction)
                     .invoke(in.getTransactionId());
 
             return CaptureTransactionResponse.newBuilder()
-                    .setSuccess(true)
+                    .setCaptureResult(toProtoCaptureResult(result.captureResult()))
+                    .setCaptureStatus(toProtoCaptureStatus(result.captureStatus()))
                     .build();
         } catch (Exception e) {
             logger.error("Failed to capture transaction {} for account {}: {}",
+                    in.getTransactionId(), in.getAccountId(), e.getMessage());
+            throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
+        }
+    }
+
+    @Override
+    public CancelTransactionResponse cancelTransaction(CancelTransactionRequest in) {
+        logger.info("Cancel transaction {} for account {}", in.getTransactionId(), in.getAccountId());
+
+        try {
+            var result = componentClient.forEventSourcedEntity(in.getAccountId())
+                    .method(AccountEntity::cancelTransaction)
+                    .invoke(in.getTransactionId());
+
+            return CancelTransactionResponse.newBuilder()
+                    .setCancelResult(toProtoCancelResult(result.cancelResult()))
+                    .setCancelStatus(toProtoCancelStatus(result.cancelStatus()))
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to cancel transaction {} for account {}: {}",
                     in.getTransactionId(), in.getAccountId(), e.getMessage());
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
         }
@@ -149,4 +170,38 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
             case account_not_found -> AuthStatus.ACCOUNT_NOT_FOUND;
         };
     }
+
+    private CaptureTransResult toProtoCaptureResult(AccountEntity.CaptureTransactionResult result) {
+        return switch (result) {
+            case captured -> CaptureTransResult.CAPTURED;
+            case declined -> CaptureTransResult.CAPTURE_DECLINED;
+        };
+    }
+
+    private CaptureTransStatus toProtoCaptureStatus(AccountEntity.CaptureTransactionStatus status) {
+        return switch (status) {
+            case ok -> CaptureTransStatus.CAPTURE_OK;
+            case undiscosed -> CaptureTransStatus.CAPTURE_UNDISCLOSED;
+            case account_not_found -> CaptureTransStatus.CAPTURE_ACCOUNT_NOT_FOUND;
+            case transaction_not_found -> CaptureTransStatus.CAPTURE_TRANSACTION_NOT_FOUND;
+        };
+    }
+
+    private CancelTransResult toProtoCancelResult(AccountEntity.CancelTransactionResult result) {
+        return switch (result) {
+            case canceled -> CancelTransResult.CANCELED;
+            case declined -> CancelTransResult.CANCEL_DECLINED;
+        };
+    }
+
+    private CancelTransStatus toProtoCancelStatus(AccountEntity.CancelTransactionStatus status) {
+        return switch (status) {
+            case ok -> CancelTransStatus.CANCEL_OK;
+            case undiscosed -> CancelTransStatus.CANCEL_UNDISCLOSED;
+            case account_not_found -> CancelTransStatus.CANCEL_ACCOUNT_NOT_FOUND;
+            case transaction_not_found -> CancelTransStatus.CANCEL_TRANSACTION_NOT_FOUND;
+        };
+    }
+
+
 }

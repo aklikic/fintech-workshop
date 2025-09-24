@@ -4,6 +4,8 @@ import akka.grpc.GrpcServiceException;
 import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
+import com.example.akka.account.api.CaptureTransactionRequest;
+import com.example.akka.account.api.CaptureTransactionResponse;
 import com.example.akka.payments.application.TransactionWorkflow;
 import com.example.akka.payments.domain.TransactionState;
 import io.grpc.Status;
@@ -72,26 +74,49 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
     }
 
     @Override
-    public CaptureTransactionResponse captureTransaction(CaptureTransactionRequest request) {
+    public StartCaptureTransactionResponse captureTransaction(StartCaptureTransactionRequest request) {
         logger.info("Capturing transaction for idempotency key: {}", request.getIdempotencyKey());
-        
+
         try {
             var result = componentClient
-                .forWorkflow(request.getIdempotencyKey())
-                .method(TransactionWorkflow::captureTransaction)
-                .invoke();
-            
-            return CaptureTransactionResponse.newBuilder()
-                .setResult(mapCaptureResultToProtoResult(result))
-                .build();
-                
+                    .forWorkflow(request.getIdempotencyKey())
+                    .method(TransactionWorkflow::captureTransaction)
+                    .invoke();
+
+            return StartCaptureTransactionResponse.newBuilder()
+                    .setResult(mapCaptureResultToProtoResult(result))
+                    .build();
+
         } catch (Exception e) {
             logger.error("Failed to capture transaction for key: {}", request.getIdempotencyKey(), e);
-            return CaptureTransactionResponse.newBuilder()
-                .setResult(CaptureTransactionResult.TRANSACTION_NOT_FOUND)
-                .build();
+            return StartCaptureTransactionResponse.newBuilder()
+                    .setResult(StartCaptureTransactionResult.START_CAPTURE_TRANSACTION_NOT_FOUND)
+                    .build();
         }
     }
+
+    @Override
+    public StartCancelTransactionResponse cancelTransaction(StartCancelTransactionRequest request) {
+        logger.info("Canceling transaction for idempotency key: {}", request.getIdempotencyKey());
+
+        try {
+            var result = componentClient
+                    .forWorkflow(request.getIdempotencyKey())
+                    .method(TransactionWorkflow::cancelTransaction)
+                    .invoke();
+
+            return StartCancelTransactionResponse.newBuilder()
+                    .setResult(mapCancelResultToProtoResult(result))
+                    .build();
+
+        } catch (Exception e) {
+            logger.error("Failed to cancel transaction for key: {}", request.getIdempotencyKey(), e);
+            return StartCancelTransactionResponse.newBuilder()
+                    .setResult(StartCancelTransactionResult.CANCEL_START_TRANSACTION_NOT_FOUND)
+                    .build();
+        }
+    }
+
     
     private Transaction toProtoTransactionState(TransactionState state) {
         return Transaction.newBuilder()
@@ -105,7 +130,10 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             .setAuthCode(state.authCode())
             .setAuthResult(toProtoAuthResult(state.authResult()))
             .setAuthStatus(toProtoAuthStatus(state.authStatus()))
-            .setCaptured(state.captured())
+            .setCaptureResult(toProtoCaptureResult(state.captureResult()))
+            .setCaptureStatus(toProtoCaptureStatus(state.captureStatus()))
+            .setCancelResult(toProtoCancelResult(state.cancelResult()))
+            .setCancelStatus(toProtoCancelStatus(state.cancelStatus()))
             .build();
     }
     
@@ -122,11 +150,44 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
             case card_not_found -> TransactionAuthStatus.CARD_NOT_FOUND;
             case insufficient_funds -> TransactionAuthStatus.INSUFFICIENT_FUNDS;
             case account_closed -> TransactionAuthStatus.ACCOUNT_CLOSED;
-            case undiscosed -> TransactionAuthStatus.UNDISCLOSED;
             case account_not_found -> TransactionAuthStatus.ACCOUNT_NOT_FOUND;
+            default -> TransactionAuthStatus.UNDISCLOSED;
         };
     }
-    
+
+    private TransactionCaptureResult toProtoCaptureResult(TransactionState.CaptureResult result) {
+        return switch (result) {
+            case captured -> TransactionCaptureResult.CAPTURED;
+            case declined -> TransactionCaptureResult.CAPTURE_DECLINED;
+        };
+    }
+
+    private TransactionCaptureStatus toProtoCaptureStatus(TransactionState.CaptureStatus status) {
+        return switch (status) {
+            case ok -> TransactionCaptureStatus.CAPTURE_OK;
+            case account_not_found -> TransactionCaptureStatus.CAPTURE_ACCOUNT_NOT_FOUND;
+            case transaction_not_found -> TransactionCaptureStatus.CAPTURE_TRANSACTION_NOT_FOUND;
+            default -> TransactionCaptureStatus.CAPTURE_UNDISCLOSED;
+        };
+    }
+
+    private TransactionCancelResult toProtoCancelResult(TransactionState.CancelResult result) {
+        return switch (result) {
+            case canceled -> TransactionCancelResult.CANCELED;
+            case declined -> TransactionCancelResult.CANCEL_DECLINED;
+        };
+    }
+
+    private TransactionCancelStatus toProtoCancelStatus(TransactionState.CancelStatus status) {
+        return switch (status) {
+            case ok -> TransactionCancelStatus.CANCEL_OK;
+            case account_not_found -> TransactionCancelStatus.CANCEL_ACCOUNT_NOT_FOUND;
+            case transaction_not_found -> TransactionCancelStatus.CANCEL_TRANSACTION_NOT_FOUND;
+            default -> TransactionCancelStatus.CANCEL_UNDISCLOSED;
+        };
+    }
+
+
     private StartTransactionResult mapWorkflowResultToProtoResult(TransactionWorkflow.StartAuthorizeTransactionResult result) {
         return switch (result) {
             case STARTED -> StartTransactionResult.STARTED;
@@ -134,12 +195,23 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
         };
     }
     
-    private CaptureTransactionResult mapCaptureResultToProtoResult(TransactionWorkflow.CaptureTransactionResult result) {
+    private StartCaptureTransactionResult mapCaptureResultToProtoResult(TransactionWorkflow.StartCaptureTransactionResult result) {
         return switch (result) {
-            case CAPTURE_STARTED -> CaptureTransactionResult.CAPTURE_STARTED;
-            case TRANSACTION_NOT_FOUND -> CaptureTransactionResult.TRANSACTION_NOT_FOUND;
-            case NOT_AUTHORIZED -> CaptureTransactionResult.NOT_AUTHORIZED;
-            case ALREADY_CAPTURED -> CaptureTransactionResult.ALREADY_CAPTURED;
+            case CAPTURE_STARTED -> StartCaptureTransactionResult.START_CAPTURE_STARTED;
+            case TRANSACTION_NOT_FOUND -> StartCaptureTransactionResult.START_CAPTURE_TRANSACTION_NOT_FOUND;
+            case NOT_AUTHORIZED -> StartCaptureTransactionResult.START_CAPTURE_NOT_AUTHORIZED;
+            case ALREADY_CAPTURED -> StartCaptureTransactionResult.START_CAPTURE_ALREADY_CAPTURED;
+            case ALREADY_CANCELED -> StartCaptureTransactionResult.START_CAPTURE_ALREADY_CANCELED;
+        };
+    }
+
+    private StartCancelTransactionResult mapCancelResultToProtoResult(TransactionWorkflow.StartCancelTransactionResult result) {
+        return switch (result) {
+            case CANCEL_STARTED -> StartCancelTransactionResult.CANCEL_START_STARTED;
+            case TRANSACTION_NOT_FOUND -> StartCancelTransactionResult.CANCEL_START_TRANSACTION_NOT_FOUND;
+            case NOT_AUTHORIZED -> StartCancelTransactionResult.CANCEL_START_NOT_AUTHORIZED;
+            case ALREADY_CAPTURED -> StartCancelTransactionResult.CANCEL_START_ALREADY_CAPTURED;
+            case ALREADY_CANCELED -> StartCancelTransactionResult.CANCEL_START_ALREADY_CANCELED;
         };
     }
 
@@ -160,6 +232,10 @@ public class TransactionGrpcEndpointImpl implements TransactionGrpcEndpoint {
                     .setAccountId(transaction.accountId())
                     .setAuthResult(transaction.authResult())
                     .setAuthStatus(transaction.authStatus())
+                    .setCaptureResult(transaction.captureResult())
+                    .setCaptureStatus(transaction.captureStatus())
+                    .setCancelResult(transaction.cancelResult())
+                    .setCancelStatus(transaction.cancelStatus())
                     .build())
                 .toList();
 

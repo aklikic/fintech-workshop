@@ -41,33 +41,59 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
       var authOpt = currentState().getAuthorisation(request.transactionId());
       if (authOpt.isPresent()) {
         //deduplication
-        return effects().reply(AuthorisationResponse.ok(authOpt.map(AccountState.Authorisation::authCode).get()));
+        return effects()
+                .reply(AuthorisationResponse.ok(authOpt.map(AccountState.Authorisation::authCode).get()));
       }
       
       if (!currentState().isAvailableBalance(request.amount())) {
-        return effects().reply(AuthorisationResponse.error(AuthorisationResult.declined, AuthorisationStatus.insufficient_funds));
+        return effects()
+                .reply(AuthorisationResponse.error(AuthorisationResult.declined, AuthorisationStatus.insufficient_funds));
       }
       
       var authCode = UUID.randomUUID().toString();
       var event = new AccountEvent.TransAuthorisationAdded(request.transactionId(), request.amount(), authCode);
-      return effects().persist(event).thenReply(state -> AuthorisationResponse.ok(authCode));
+      return effects()
+              .persist(event)
+              .thenReply(state -> AuthorisationResponse.ok(authCode));
       
     }
   }
   
-  public Effect<Done> captureTransaction(String transactionId) {
+  public Effect<CaptureTransactionResponse> captureTransaction(String transactionId) {
     if (currentState().isEmpty()) {
-      return effects().error("Account not found");
+      return effects()
+              .reply(CaptureTransactionResponse.error(CaptureTransactionResult.declined, CaptureTransactionStatus.account_not_found));
     }
     var maybeTrans = currentState().getAuthorisation(transactionId);
     if (!maybeTrans.isPresent()) {
       //deduplication
-      return effects().reply(Done.getInstance());
+      return effects()
+              .reply(CaptureTransactionResponse.error(CaptureTransactionResult.declined, CaptureTransactionStatus.transaction_not_found));
     }
     var event = new AccountEvent.TransCaptureAdded(transactionId, maybeTrans.get().amount());
-    return effects().persist(event).thenReply(s -> Done.getInstance());
+    return effects()
+            .persist(event)
+            .thenReply(s -> CaptureTransactionResponse.ok());
     
   }
+
+    public Effect<CancelTransactionResponse> cancelTransaction(String transactionId) {
+        if (currentState().isEmpty()) {
+            return effects()
+                    .reply(CancelTransactionResponse.error(CancelTransactionResult.declined, CancelTransactionStatus.account_not_found));
+        }
+        var maybeTrans = currentState().getAuthorisation(transactionId);
+        if (!maybeTrans.isPresent()) {
+            //deduplication
+            return effects()
+                    .reply(CancelTransactionResponse.error(CancelTransactionResult.declined, CancelTransactionStatus.transaction_not_found));
+        }
+        var event = new AccountEvent.TransCancelAdded(transactionId, maybeTrans.get().amount());
+        return effects()
+                .persist(event)
+                .thenReply(s -> CancelTransactionResponse.ok());
+
+    }
   
   
   private ApiAccount fromState(AccountState state) {
@@ -84,6 +110,7 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
       case AccountEvent.Created created -> currentState().onCreate(created);
       case AccountEvent.TransAuthorisationAdded auth -> currentState().onAuthorisationAdded(auth);
       case AccountEvent.TransCaptureAdded capture -> currentState().onCaptureAdded(capture);
+      case AccountEvent.TransCancelAdded cancel -> currentState().onCancelAdded(cancel);
     };
   }
   
@@ -119,6 +146,44 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
   public enum AuthorisationStatus {
     ok, card_not_found, insufficient_funds, account_closed, undiscosed, account_not_found
   }
+
+    public record CaptureTransactionResponse(CaptureTransactionResult captureResult,
+                                             CaptureTransactionStatus captureStatus) {
+        public static CaptureTransactionResponse ok() {
+            return new CaptureTransactionResponse(CaptureTransactionResult.captured, CaptureTransactionStatus.ok);
+        }
+
+        public static CaptureTransactionResponse error(CaptureTransactionResult captureResult, CaptureTransactionStatus captureStatus) {
+            return new CaptureTransactionResponse(captureResult, captureStatus);
+        }
+    }
+
+    public enum CaptureTransactionResult {
+        captured, declined
+    }
+
+    public enum CaptureTransactionStatus {
+        ok, undiscosed, account_not_found, transaction_not_found
+    }
+
+    public record CancelTransactionResponse(CancelTransactionResult cancelResult,
+                                            CancelTransactionStatus cancelStatus) {
+        public static CancelTransactionResponse ok() {
+            return new CancelTransactionResponse(CancelTransactionResult.canceled, CancelTransactionStatus.ok);
+        }
+
+        public static CancelTransactionResponse error(CancelTransactionResult cancelResult, CancelTransactionStatus cancelStatus) {
+            return new CancelTransactionResponse(cancelResult, cancelStatus);
+        }
+    }
+
+    public enum CancelTransactionResult {
+        canceled, declined
+    }
+
+    public enum CancelTransactionStatus {
+        ok, undiscosed, account_not_found, transaction_not_found
+    }
   
   
 }

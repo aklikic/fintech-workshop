@@ -1,4 +1,4 @@
-package com.example.akka.ui;
+package com.example.akka.backoffice;
 
 import akka.javasdk.DependencyProvider;
 import akka.javasdk.ServiceSetup;

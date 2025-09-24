@@ -35,6 +35,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
             return effects().reply(StartAuthorizeTransactionResult.ALREADY_EXISTS);
         }
 
+
         var cardData = new TransactionState.CardData(
                 request.cardPan(),
                 request.cardExpiryDate(),
@@ -51,25 +52,55 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                 .thenReply(StartAuthorizeTransactionResult.STARTED);
     }
 
-    public Effect<CaptureTransactionResult> captureTransaction() {
+    public Effect<StartCaptureTransactionResult> captureTransaction() {
         logger.info("Capture transaction requested for transaction: {}",
                 currentState() != null ? currentState().transactionId() : "unknown");
 
+        logger.info("state:{}",currentState());
+
         if (currentState() == null || currentState().isEmpty()) {
-            return effects().reply(CaptureTransactionResult.TRANSACTION_NOT_FOUND);
+            return effects().reply(StartCaptureTransactionResult.TRANSACTION_NOT_FOUND);
         }
 
         if (currentState().authResult() != TransactionState.AuthResult.authorised) {
-            return effects().reply(CaptureTransactionResult.NOT_AUTHORIZED);
+            return effects().reply(StartCaptureTransactionResult.NOT_AUTHORIZED);
         }
 
-        if (currentState().captured()) {
-            return effects().reply(CaptureTransactionResult.ALREADY_CAPTURED);
+        if (currentState().captureResult() == TransactionState.CaptureResult.captured) {
+            return effects().reply(StartCaptureTransactionResult.ALREADY_CAPTURED);
+        }
+
+        if (currentState().cancelResult() == TransactionState.CancelResult.canceled) {
+            return effects().reply(StartCaptureTransactionResult.ALREADY_CANCELED);
         }
 
         return effects()
                 .transitionTo(TransactionWorkflow::captureTransactionStep)
-                .thenReply(CaptureTransactionResult.CAPTURE_STARTED);
+                .thenReply(StartCaptureTransactionResult.CAPTURE_STARTED);
+    }
+
+    public Effect<StartCancelTransactionResult> cancelTransaction() {
+        logger.info("Cancel transaction requested for transaction: {}",
+                currentState() != null ? currentState().transactionId() : "unknown");
+
+        if (currentState() == null || currentState().isEmpty()) {
+            return effects().reply(StartCancelTransactionResult.TRANSACTION_NOT_FOUND);
+        }
+
+        if (currentState().authResult() != TransactionState.AuthResult.authorised) {
+            return effects().reply(StartCancelTransactionResult.NOT_AUTHORIZED);
+        }
+
+        if (currentState().captureResult() == TransactionState.CaptureResult.captured) {
+            return effects().reply(StartCancelTransactionResult.ALREADY_CAPTURED);
+        }
+        if (currentState().cancelResult() == TransactionState.CancelResult.canceled) {
+            return effects().reply(StartCancelTransactionResult.ALREADY_CANCELED);
+        }
+
+        return effects()
+                .transitionTo(TransactionWorkflow::cancelTransactionStep)
+                .thenReply(StartCancelTransactionResult.CANCEL_STARTED);
     }
 
     public ReadOnlyEffect<TransactionState> getTransaction() {
@@ -154,23 +185,27 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
             return stepEffects().updateState(updatedState).thenEnd();
         }
 
+        //create timer for timeout
+        var deferredCall = componentClient
+                .forWorkflow(commandContext().workflowId())
+                .method(TransactionWorkflow::cancelTransaction)
+                .deferred();
+        timers().createSingleTimer(scheduleCaptureTimeoutTimerId(), Duration.ofMinutes(1), deferredCall);
+
         // If authorized successfully, pause and wait for external capture trigger
         return stepEffects()
                 .updateState(updatedState)
-                .thenTransitionTo(TransactionWorkflow::scheduleCapture);
+                .thenPause();
     }
 
-    private StepEffect scheduleCapture() {
-        var deferredCall = componentClient
-                .forWorkflow(commandContext().workflowId())
-                .method(TransactionWorkflow::captureTransaction)
-                .deferred();
-        timers().createSingleTimer("capture-scheduler-" + commandContext().workflowId(), Duration.ofMinutes(1), deferredCall);
-        return stepEffects().thenPause();
+    private String scheduleCaptureTimeoutTimerId() {
+        return "capture-timeout-scheduler-" + commandContext().workflowId();
     }
+
     private StepEffect captureTransactionStep() {
         logger.info("Capturing transaction: {}", currentState().transactionId());
-        var success = false;
+        var captureResult = TransactionState.CaptureResult.declined;
+        var captureStatus = TransactionState.CaptureStatus.undiscosed;
         try {
             // Use stored accountId from authorization step
             var captureRequest = CaptureTransactionRequest.newBuilder()
@@ -179,13 +214,42 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                     .build();
 
             var response = accountClient.captureTransaction().invoke(captureRequest);
-            success = response.getSuccess();
+            captureResult =  mapProtoCaptureResult(response.getCaptureResult());
+            captureStatus = mapProtoCaptureStatus(response.getCaptureStatus());
         } catch (Exception e) {
             logger.error("Capture failed for transaction: {}", currentState().transactionId(), e);
         }
+        //delete timeout timer
+        timers().delete(scheduleCaptureTimeoutTimerId());
+        logger.info("Capture result for transaction {}: {}", currentState().transactionId(), captureResult);
 
-        logger.info("Capture result for transaction {}: {}", currentState().transactionId(), success);
-        var updatedState = currentState().withCaptured(success);
+        var updatedState = currentState().withCaptured(captureResult, captureStatus);
+        return stepEffects()
+                .updateState(updatedState)
+                .thenEnd();
+    }
+    private StepEffect cancelTransactionStep() {
+        logger.info("Cancel transaction: {}", currentState().transactionId());
+        var cancelResult = TransactionState.CancelResult.declined;
+        var cancelStatus = TransactionState.CancelStatus.undiscosed;
+        try {
+            // Use stored accountId from authorization step
+            var cancelRequest = CancelTransactionRequest.newBuilder()
+                    .setAccountId(currentState().accountId())
+                    .setTransactionId(currentState().transactionId())
+                    .build();
+
+            var response = accountClient.cancelTransaction().invoke(cancelRequest);
+            cancelResult =  mapProtoCancelResult(response.getCancelResult());
+            cancelStatus =  mapProtoCancelStatus(response.getCancelStatus());
+        } catch (Exception e) {
+            logger.error("Capture failed for transaction: {}", currentState().transactionId(), e);
+        }
+        //delete timeout timer
+        timers().delete(scheduleCaptureTimeoutTimerId());
+        logger.info("Cancel result for transaction {}: {}", currentState().transactionId(), cancelResult);
+
+        var updatedState = currentState().withCanceled(cancelResult,cancelStatus);
         return stepEffects()
                 .updateState(updatedState)
                 .thenEnd();
@@ -225,10 +289,51 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
         ALREADY_EXISTS
     }
     
-    public enum CaptureTransactionResult {
+    public enum StartCaptureTransactionResult {
         CAPTURE_STARTED,
         TRANSACTION_NOT_FOUND,
         NOT_AUTHORIZED,
-        ALREADY_CAPTURED
+        ALREADY_CAPTURED,
+        ALREADY_CANCELED
+    }
+
+    private TransactionState.CaptureResult mapProtoCaptureResult(CaptureTransResult protoResult) {
+        return switch (protoResult) {
+            case CAPTURED -> TransactionState.CaptureResult.captured;
+            default -> TransactionState.CaptureResult.declined;
+        };
+    }
+
+    private TransactionState.CaptureStatus mapProtoCaptureStatus(CaptureTransStatus protoStatus) {
+        return switch (protoStatus) {
+            case CAPTURE_OK -> TransactionState.CaptureStatus.ok;
+            case CAPTURE_ACCOUNT_NOT_FOUND ->   TransactionState.CaptureStatus.account_not_found;
+            case CAPTURE_TRANSACTION_NOT_FOUND ->    TransactionState.CaptureStatus.transaction_not_found;
+            default -> TransactionState.CaptureStatus.undiscosed;
+        };
+    }
+
+    public enum StartCancelTransactionResult {
+        CANCEL_STARTED,
+        TRANSACTION_NOT_FOUND,
+        NOT_AUTHORIZED,
+        ALREADY_CAPTURED,
+        ALREADY_CANCELED
+    }
+
+    private TransactionState.CancelResult mapProtoCancelResult(CancelTransResult protoResult) {
+        return switch (protoResult) {
+            case CANCELED -> TransactionState.CancelResult.canceled;
+            default -> TransactionState.CancelResult.declined;
+        };
+    }
+
+    private TransactionState.CancelStatus mapProtoCancelStatus(CancelTransStatus protoStatus) {
+        return switch (protoStatus) {
+            case CANCEL_OK -> TransactionState.CancelStatus.ok;
+            case CANCEL_ACCOUNT_NOT_FOUND ->   TransactionState.CancelStatus.account_not_found;
+            case CANCEL_TRANSACTION_NOT_FOUND ->    TransactionState.CancelStatus.transaction_not_found;
+            default -> TransactionState.CancelStatus.undiscosed;
+        };
     }
 }

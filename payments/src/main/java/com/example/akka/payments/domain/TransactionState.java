@@ -8,11 +8,14 @@ public record TransactionState(
     String authCode,
     AuthResult authResult,
     AuthStatus authStatus,
-    boolean captured
+    CaptureResult captureResult,
+    CaptureStatus captureStatus,
+    CancelResult cancelResult,
+    CancelStatus cancelStatus
 ) {
     
     public static TransactionState empty() {
-        return new TransactionState("", "", CardData.empty(), "", "", AuthResult.declined, AuthStatus.ok, false);
+        return new TransactionState("", "", CardData.empty(), "", "", AuthResult.declined, AuthStatus.ok, CaptureResult.declined, CaptureStatus.ok, CancelResult.declined, CancelStatus.ok);
     }
     
     public boolean isEmpty() {
@@ -26,22 +29,29 @@ public record TransactionState(
                 cardData,
                 "",
                 "",
-                TransactionState.AuthResult.declined,
-                TransactionState.AuthStatus.ok,
-                false
+                authResult,
+                authStatus,
+                captureResult,
+                captureStatus,
+                cancelResult,
+                cancelStatus
         );
     }
 
     public TransactionState withCardValid(String accountId) {
-        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captureResult, captureStatus, cancelResult, cancelStatus);
     }
 
     public TransactionState withAuthResult(String authCode, AuthResult authResult, AuthStatus authStatus) {
-        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captureResult, captureStatus, cancelResult, cancelStatus);
     }
     
-    public TransactionState withCaptured(boolean captured) {
-        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captured);
+    public TransactionState withCaptured(CaptureResult captureResult, CaptureStatus captureStatus) {
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captureResult, captureStatus, cancelResult, cancelStatus);
+    }
+
+    public TransactionState withCanceled(CancelResult cancelResult, CancelStatus cancelStatus) {
+        return new TransactionState(idempotencyKey, transactionId, cardData, accountId, authCode, authResult, authStatus, captureResult, captureStatus, cancelResult, cancelStatus);
     }
     
     public record CardData(
@@ -63,4 +73,21 @@ public record TransactionState(
     public enum AuthStatus {
         ok, card_not_found, insufficient_funds, account_closed, undiscosed, account_not_found
     }
+
+    public enum CaptureResult {
+        captured, declined
+    }
+
+    public enum CaptureStatus {
+        ok, undiscosed, account_not_found, transaction_not_found
+    }
+
+    public enum CancelResult {
+        canceled, declined
+    }
+
+    public enum CancelStatus {
+        ok, undiscosed, account_not_found, transaction_not_found
+    }
+
 }

@@ -53,9 +53,47 @@ message CaptureTransactionRequest {
   string transaction_id = 2;
 }
 
+enum CaptureTransResult {
+  CAPTURE_RESULT_UNSPECIFIED = 0;
+  CAPTURED = 1;
+  CAPTURE_DECLINED = 2;
+}
+
+enum CaptureTransStatus {
+  CAPTURE_STATUS_UNSPECIFIED = 0;
+  CAPTURE_OK = 1;
+  CAPTURE_ACCOUNT_NOT_FOUND = 2;
+  CAPTURE_TRANSACTION_NOT_FOUND = 3;
+  CAPTURE_UNDISCLOSED = 4;
+}
 
 message CaptureTransactionResponse {
-  bool success = 1;
+  CaptureTransResult capture_result = 1 ;
+  CaptureTransStatus capture_status = 2 ;
+}
+
+message CancelTransactionRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+}
+
+enum CancelTransResult {
+  CANCEL_RESULT_UNSPECIFIED = 0;
+  CANCELED = 1;
+  CANCEL_DECLINED = 2;
+}
+
+enum CancelTransStatus {
+  CANCEL_STATUS_UNSPECIFIED = 0;
+  CANCEL_OK = 1;
+  CANCEL_ACCOUNT_NOT_FOUND = 2;
+  CANCEL_TRANSACTION_NOT_FOUND = 3;
+  CANCEL_UNDISCLOSED = 4;
+}
+
+message CancelTransactionResponse {
+  CancelTransResult Cancel_result = 1 ;
+  CancelTransStatus Cancel_status = 2 ;
 }
 
 
@@ -72,5 +110,6 @@ service AccountGrpcEndpoint {
   rpc GetAccount (GetAccountRequest) returns (Account) {}
   rpc AuthorizeTransaction (AuthorizeTransactionRequest) returns (AuthorizeTransactionResponse) {}
   rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
+  rpc CancelTransaction (CancelTransactionRequest) returns (CancelTransactionResponse) {}
   rpc GetAllAccounts (GetAllAccountsRequest) returns (GetAllAccountsResponse) {}
 }

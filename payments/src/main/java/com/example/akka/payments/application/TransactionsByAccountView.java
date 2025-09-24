@@ -17,7 +17,11 @@ public class TransactionsByAccountView extends View {
             String transactionId,
             String accountId,
             String authResult,
-            String authStatus
+            String authStatus,
+            String captureResult,
+            String captureStatus,
+            String cancelResult,
+            String cancelStatus
     ) {}
 
     public record TransactionList(Collection<TransactionSummary> transactions) {}
@@ -34,7 +38,11 @@ public class TransactionsByAccountView extends View {
                             transactionState.transactionId(),
                             transactionState.accountId(),
                             transactionState.authResult().name(),
-                            transactionState.authStatus().name()
+                            transactionState.authStatus().name(),
+                            transactionState.captureResult().name(),
+                            transactionState.captureStatus().name(),
+                            transactionState.cancelResult().name(),
+                            transactionState.cancelStatus().name()
                     )
             );
         }

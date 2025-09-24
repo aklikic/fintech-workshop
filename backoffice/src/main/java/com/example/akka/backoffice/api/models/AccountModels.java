@@ -1,4 +1,4 @@
-package com.example.akka.ui.api.models;
+package com.example.akka.backoffice.api.models;
 
 public class AccountModels {
 
@@ -12,7 +12,10 @@ public class AccountModels {
 
     public record CaptureTransactionRequest(String transactionId) {}
 
-    public record CaptureTransactionResponse(boolean success) {}
+    public record CaptureTransactionResponse(String captureResult, String captureStatus) {}
+
+    public record CancelTransactionRequest(String transactionId) {}
+    public record CancelTransactionResponse(String cancelResult, String cancelStatus) {}
 
     public record GetAllAccountsResponse(java.util.List<Account> accounts) {}
 }

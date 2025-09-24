@@ -21,7 +21,6 @@
     <module>api</module>
     <module>payments</module>
     <module>corebanking</module>
-    <module>ui</module>
-    <module>agentic</module>
+    <module>backoffice</module>
   </modules>
 </project>

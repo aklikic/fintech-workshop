@@ -175,15 +175,28 @@ Result: ${response.result}`;
 
         transactions.forEach(transaction => {
             const row = document.createElement('tr');
+            let captureResult = "N/A";
+            let captureStatus = "N/A";
+            if(!(transaction.captureResult == 'declined' && transaction.captureStatus == 'ok')){
+                captureResult = transaction.captureResult;
+                captureStatus = transaction.captureStatus;
+            }
+            let cancelResult = "N/A";
+            let cancelStatus = "N/A";
+            if(!(transaction.cancelResult == 'declined' && transaction.cancelStatus == 'ok')){
+                cancelResult = transaction.cancelResult;
+                cancelStatus = transaction.cancelStatus;
+            }
             row.innerHTML = `
                 <td>${transaction.transactionId}</td>
                 <td>${transaction.idempotencyKey}</td>
                 <td>${transaction.authResult}</td>
                 <td>${transaction.authStatus}</td>
+                <td>${captureResult}</td>
+                <td>${captureStatus}</td>
+                <td>${cancelResult}</td>
+                <td>${cancelStatus}</td>
                 <td class="action-buttons">
-                    <button class="secondary-btn get-details-btn" data-idempotency-key="${transaction.idempotencyKey}">
-                        Get Details
-                    </button>
                     <button class="primary-btn capture-btn" data-idempotency-key="${transaction.idempotencyKey}">
                         Capture
                     </button>

@@ -39,6 +39,14 @@ public class AccountView extends View {
                             current.availableBalance(),
                             current.postedBalance() - capture.amount()));
                 }
+                case AccountEvent.TransCancelAdded cancel -> {
+                    var current = rowState();
+                    if (current == null) yield effects().ignore();
+                    yield effects().updateRow(new AccountSummary(
+                            current.accountId(),
+                            current.availableBalance() + cancel.amount(),
+                            current.postedBalance()));
+                }
             };
         }
     }

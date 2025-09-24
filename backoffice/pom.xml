@@ -9,7 +9,8 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>agentic</artifactId>
+    <artifactId>backoffice</artifactId>
+
     <dependencies>
         <dependency>
             <groupId>com.example.akka</groupId>
@@ -17,4 +18,5 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
 </project>

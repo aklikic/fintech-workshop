@@ -30,21 +30,40 @@ message GetTransactionRequest {
   string idempotency_key = 1;
 }
 
-message CaptureTransactionRequest {
+message StartCaptureTransactionRequest {
   string idempotency_key = 1;
 }
 
-enum CaptureTransactionResult {
-  CAPTURE_TRANSACTION_RESULT_UNSPECIFIED = 0;
-  CAPTURE_STARTED = 1;
-  TRANSACTION_NOT_FOUND = 2;
-  NOT_AUTHORIZED = 3;
-  ALREADY_CAPTURED = 4;
+enum StartCaptureTransactionResult {
+  START_CAPTURE_TRANSACTION_RESULT_UNSPECIFIED = 0;
+  START_CAPTURE_STARTED = 1;
+  START_CAPTURE_TRANSACTION_NOT_FOUND = 2;
+  START_CAPTURE_NOT_AUTHORIZED = 3;
+  START_CAPTURE_ALREADY_CAPTURED = 4;
+  START_CAPTURE_ALREADY_CANCELED = 5;
 }
 
-message CaptureTransactionResponse {
-  CaptureTransactionResult result = 1;
+message StartCaptureTransactionResponse {
+  StartCaptureTransactionResult result = 1;
 }
+
+message StartCancelTransactionRequest {
+  string idempotency_key = 1;
+}
+
+enum StartCancelTransactionResult {
+  CANCEL_START_TRANSACTION_RESULT_UNSPECIFIED = 0;
+  CANCEL_START_STARTED = 1;
+  CANCEL_START_TRANSACTION_NOT_FOUND = 2;
+  CANCEL_START_NOT_AUTHORIZED = 3;
+  CANCEL_START_ALREADY_CAPTURED = 4;
+  CANCEL_START_ALREADY_CANCELED = 5;
+}
+
+message StartCancelTransactionResponse {
+  StartCancelTransactionResult result = 1;
+}
+
 
 enum TransactionAuthResult {
   TRANSACTION_AUTH_RESULT_UNSPECIFIED = 0;
@@ -62,6 +81,34 @@ enum TransactionAuthStatus {
   ACCOUNT_NOT_FOUND = 6;
 }
 
+enum TransactionCaptureResult {
+  CAPTURE_RESULT_UNSPECIFIED = 0;
+  CAPTURED = 1;
+  CAPTURE_DECLINED = 2;
+}
+
+enum TransactionCaptureStatus {
+  CAPTURE_STATUS_UNSPECIFIED = 0;
+  CAPTURE_OK = 1;
+  CAPTURE_ACCOUNT_NOT_FOUND = 2;
+  CAPTURE_TRANSACTION_NOT_FOUND = 3;
+  CAPTURE_UNDISCLOSED = 4;
+}
+
+enum TransactionCancelResult {
+  CANCEL_RESULT_UNSPECIFIED = 0;
+  CANCELED = 1;
+  CANCEL_DECLINED = 2;
+}
+
+enum TransactionCancelStatus {
+  CANCEL_STATUS_UNSPECIFIED = 0;
+  CANCEL_OK = 1;
+  CANCEL_ACCOUNT_NOT_FOUND = 2;
+  CANCEL_TRANSACTION_NOT_FOUND = 3;
+  CANCEL_UNDISCLOSED = 4;
+}
+
 message Transaction {
   string idempotency_key = 1;
   string transaction_id = 2;
@@ -73,7 +120,11 @@ message Transaction {
   string auth_code = 8;
   TransactionAuthResult auth_result = 9;
   TransactionAuthStatus auth_status = 10;
-  bool captured = 11;
+  TransactionCaptureResult capture_result = 11;
+  TransactionCaptureStatus capture_status = 12;
+  TransactionCancelResult cancel_result = 13;
+  TransactionCancelStatus cancel_status = 14;
+
 }
 
 message TransactionSummary {
@@ -82,6 +133,10 @@ message TransactionSummary {
   string account_id = 3;
   string auth_result = 4;
   string auth_status = 5;
+  string capture_result = 6;
+  string capture_status = 7;
+  string cancel_result = 8;
+  string cancel_status = 9;
 }
 
 message GetTransactionsByAccountRequest {
@@ -95,6 +150,7 @@ message GetTransactionsByAccountResponse {
 service TransactionGrpcEndpoint {
   rpc StartTransaction (StartTransactionRequest) returns (StartTransactionResponse) {}
   rpc GetTransaction (GetTransactionRequest) returns (Transaction) {}
-  rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
+  rpc CaptureTransaction (StartCaptureTransactionRequest) returns (StartCaptureTransactionResponse) {}
+  rpc CancelTransaction (StartCancelTransactionRequest) returns (StartCancelTransactionResponse) {}
   rpc GetTransactionsByAccount (GetTransactionsByAccountRequest) returns (GetTransactionsByAccountResponse) {}
 }

@@ -144,7 +144,7 @@ public class AccountGrpcEndpointIntegrationTest extends TestKitSupport {
         
         var response = client.captureTransaction().invoke(captureRequest);
         
-        assertTrue(response.getSuccess());
+        assertEquals(CaptureTransResult.CAPTURED,response.getCaptureResult());
     }
 
     @Test

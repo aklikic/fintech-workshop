@@ -15,7 +15,6 @@ import org.wiremock.grpc.GrpcExtensionFactory;
 import org.wiremock.grpc.dsl.WireMockGrpcService;
 
 import java.time.Duration;
-import java.util.Set;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.*;
@@ -352,7 +351,8 @@ public class TransactionWorkflowTest extends TestKitSupport {
         mockAccountService.stubFor(
             method("CaptureTransaction")
                 .willReturn(message(CaptureTransactionResponse.newBuilder()
-                    .setSuccess(true)
+                    .setCaptureStatus(CaptureTransStatus.CAPTURE_OK)
+                    .setCaptureResult(CaptureTransResult.CAPTURED)
                     .build()))
         );
 
@@ -408,14 +408,14 @@ public class TransactionWorkflowTest extends TestKitSupport {
         assertEquals(TransactionState.AuthResult.authorised, state.authResult());
         assertEquals(TransactionState.AuthStatus.ok, state.authStatus());
         assertEquals("account-capture-test", state.accountId());
-        assertFalse(state.captured());
+        assertEquals(TransactionState.CaptureResult.declined,state.captureResult());
 
         // Now trigger capture
         var captureResult = workflowClient
                 .method(TransactionWorkflow::captureTransaction)
                 .invoke();
 
-        assertEquals(TransactionWorkflow.CaptureTransactionResult.CAPTURE_STARTED, captureResult);
+        assertEquals(TransactionWorkflow.StartCaptureTransactionResult.CAPTURE_STARTED, captureResult);
 
         // Wait for capture to complete and verify final state
         var finalState = await(
@@ -432,7 +432,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
         assertEquals(TransactionState.AuthResult.authorised, finalState.authResult());
         assertEquals(TransactionState.AuthStatus.ok, finalState.authStatus());
         assertEquals("account-capture-test", finalState.accountId());
-        assertTrue(finalState.captured()); // Should now be captured
+        assertEquals(TransactionState.CaptureResult.captured,state.captureResult());// Should now be captured
     }
 
 //    @Test
@@ -476,7 +476,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
                 .method(TransactionWorkflow::captureTransaction)
                 .invoke();
 
-        assertEquals(TransactionWorkflow.CaptureTransactionResult.NOT_AUTHORIZED, captureResult);
+        assertEquals(TransactionWorkflow.StartCaptureTransactionResult.NOT_AUTHORIZED, captureResult);
     }
 
 //    @Test
@@ -494,7 +494,8 @@ public class TransactionWorkflowTest extends TestKitSupport {
         mockAccountService.stubFor(
             method("CaptureTransaction")
                 .willReturn(message(CaptureTransactionResponse.newBuilder()
-                    .setSuccess(true)
+                        .setCaptureStatus(CaptureTransStatus.CAPTURE_OK)
+                        .setCaptureResult(CaptureTransResult.CAPTURED)
                     .build()))
         );
 
@@ -544,7 +545,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
                 .method(TransactionWorkflow::captureTransaction)
                 .invoke();
 
-        assertEquals(TransactionWorkflow.CaptureTransactionResult.CAPTURE_STARTED, firstCaptureResult);
+        assertEquals(TransactionWorkflow.StartCaptureTransactionResult.CAPTURE_STARTED, firstCaptureResult);
 
         // Wait for capture to complete
         await(
@@ -559,7 +560,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
                 .method(TransactionWorkflow::captureTransaction)
                 .invoke();
 
-        assertEquals(TransactionWorkflow.CaptureTransactionResult.ALREADY_CAPTURED, secondCaptureResult);
+        assertEquals(TransactionWorkflow.StartCaptureTransactionResult.ALREADY_CAPTURED, secondCaptureResult);
     }
 
 //    @Test
@@ -571,6 +572,6 @@ public class TransactionWorkflowTest extends TestKitSupport {
                 .method(TransactionWorkflow::captureTransaction)
                 .invoke();
 
-        assertEquals(TransactionWorkflow.CaptureTransactionResult.TRANSACTION_NOT_FOUND, captureResult);
+        assertEquals(TransactionWorkflow.StartCaptureTransactionResult.TRANSACTION_NOT_FOUND, captureResult);
     }
 }

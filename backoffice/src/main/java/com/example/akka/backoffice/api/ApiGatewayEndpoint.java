@@ -1,4 +1,4 @@
-package com.example.akka.ui.api;
+package com.example.akka.backoffice.api;
 
 import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.http.*;
@@ -6,9 +6,9 @@ import akka.javasdk.http.AbstractHttpEndpoint;
 import com.example.akka.account.api.*;
 import com.example.akka.payments.api.CardGrpcEndpointClient;
 import com.example.akka.payments.api.TransactionGrpcEndpointClient;
-import com.example.akka.ui.api.models.AccountModels;
-import com.example.akka.ui.api.models.CardModels;
-import com.example.akka.ui.api.models.TransactionModels;
+import com.example.akka.backoffice.api.models.AccountModels;
+import com.example.akka.backoffice.api.models.CardModels;
+import com.example.akka.backoffice.api.models.TransactionModels;
 
 @HttpEndpoint("/api")
 @Acl(allow = @Acl.Matcher(principal = Acl.Principal.ALL))
@@ -54,39 +54,6 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 grpcResponse.getAvailableBalance(),
                 grpcResponse.getPostedBalance()
         );
-    }
-
-    @Post("/accounts/{accountId}/authorize")
-    public AccountModels.AuthorizeTransactionResponse authorizeTransaction(
-            String accountId,
-            AccountModels.AuthorizeTransactionRequest request) {
-
-        var grpcRequest = AuthorizeTransactionRequest.newBuilder()
-                .setAccountId(accountId)
-                .setTransactionId(request.transactionId())
-                .setAmount(request.amount())
-                .build();
-
-        var grpcResponse = accountClient.authorizeTransaction().invoke(grpcRequest);
-        return new AccountModels.AuthorizeTransactionResponse(
-                grpcResponse.getAuthCode(),
-                grpcResponse.getAuthResult().name(),
-                grpcResponse.getAuthStatus().name()
-        );
-    }
-
-    @Post("/accounts/{accountId}/capture")
-    public AccountModels.CaptureTransactionResponse captureTransaction(
-            String accountId,
-            AccountModels.CaptureTransactionRequest request) {
-
-        var grpcRequest = CaptureTransactionRequest.newBuilder()
-                .setAccountId(accountId)
-                .setTransactionId(request.transactionId())
-                .build();
-
-        var grpcResponse = accountClient.captureTransaction().invoke(grpcRequest);
-        return new AccountModels.CaptureTransactionResponse(grpcResponse.getSuccess());
     }
 
     @Get("/accounts")
@@ -138,21 +105,6 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
         );
     }
 
-    @Post("/cards/validate")
-    public CardModels.ValidateCardResponse validateCard(CardModels.ValidateCardRequest request) {
-        var grpcRequest = com.example.akka.payments.api.ValidateCardRequest.newBuilder()
-                .setPan(request.pan())
-                .setExpiryDate(request.expiryDate())
-                .setCvv(request.cvv())
-                .build();
-
-        var grpcResponse = cardClient.validateCard().invoke(grpcRequest);
-        return new CardModels.ValidateCardResponse(
-                grpcResponse.getIsValid(),
-                grpcResponse.getMessage()
-        );
-    }
-
     @Post("/transactions/start")
     public TransactionModels.StartTransactionResponse startTransaction(TransactionModels.StartTransactionRequest request) {
         var grpcRequest = com.example.akka.payments.api.StartTransactionRequest.newBuilder()
@@ -187,18 +139,31 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 grpcResponse.getAuthCode(),
                 grpcResponse.getAuthResult().name(),
                 grpcResponse.getAuthStatus().name(),
-                grpcResponse.getCaptured()
+                grpcResponse.getCaptureResult().name(),
+                grpcResponse.getCaptureStatus().name(),
+                grpcResponse.getCancelResult().name(),
+                grpcResponse.getCancelStatus().name()
         );
     }
 
     @Post("/transactions/{idempotencyKey}/capture")
     public TransactionModels.CaptureTransactionResponse captureTransactionByKey(String idempotencyKey) {
-        var grpcRequest = com.example.akka.payments.api.CaptureTransactionRequest.newBuilder()
+        var grpcRequest = com.example.akka.payments.api.StartCaptureTransactionRequest.newBuilder()
                 .setIdempotencyKey(idempotencyKey)
                 .build();
 
         var grpcResponse = transactionClient.captureTransaction().invoke(grpcRequest);
         return new TransactionModels.CaptureTransactionResponse(grpcResponse.getResult().name());
+    }
+
+    @Post("/transactions/{idempotencyKey}/cancel")
+    public TransactionModels.CancelTransactionResponse cancelTransactionByKey(String idempotencyKey) {
+        var grpcRequest = com.example.akka.payments.api.StartCancelTransactionRequest.newBuilder()
+                .setIdempotencyKey(idempotencyKey)
+                .build();
+
+        var grpcResponse = transactionClient.cancelTransaction().invoke(grpcRequest);
+        return new TransactionModels.CancelTransactionResponse(grpcResponse.getResult().name());
     }
 
     @Get("/accounts/{accountId}/transactions")
@@ -215,7 +180,11 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                         t.getTransactionId(),
                         t.getAccountId(),
                         t.getAuthResult(),
-                        t.getAuthStatus()
+                        t.getAuthStatus(),
+                        t.getCaptureResult(),
+                        t.getCaptureStatus(),
+                        t.getCancelResult(),
+                        t.getCancelStatus()
                 ))
                 .toList();
 

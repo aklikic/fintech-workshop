@@ -42,6 +42,16 @@ public record AccountState(String accountId, List<Authorisation> authorisations,
             return new AccountState(accountId, newAuths, availableBalance, postedBalance - auth.amount());
         
     }
+
+    public AccountState onCancelAdded(AccountEvent.TransCancelAdded event) {
+
+        var auth = authorisations().stream().filter(a -> a.transactionId().equals(event.transactionId())).findFirst().get();
+        var newAuths = authorisations.stream()
+                .filter(a -> !a.transactionId().equals(event.transactionId()))
+                .toList();
+        return new AccountState(accountId, newAuths, availableBalance + auth.amount(), postedBalance );
+
+    }
     
     public record Authorisation(String transactionId, int amount, String authCode) {}
 }

@@ -1,4 +1,4 @@
-package com.example.akka.ui.api;
+package com.example.akka.backoffice.api;
 
 import akka.http.javadsl.model.HttpResponse;
 import akka.javasdk.annotations.Acl;
