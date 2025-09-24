@@ -190,7 +190,7 @@ public class TransactionWorkflow extends Workflow<TransactionState> {
                 .forWorkflow(commandContext().workflowId())
                 .method(TransactionWorkflow::cancelTransaction)
                 .deferred();
-        timers().createSingleTimer(scheduleCaptureTimeoutTimerId(), Duration.ofMinutes(1), deferredCall);
+        timers().createSingleTimer(scheduleCaptureTimeoutTimerId(), Duration.ofMinutes(5), deferredCall);
 
         // If authorized successfully, pause and wait for external capture trigger
         return stepEffects()

@@ -1,8 +1,17 @@
-package com.example.akka.backoffice.api.models;
+package com.example.akka.backoffice.api;
 
-public class TransactionModels {
 
-    public record StartTransactionRequest(
+public interface ApiGatewayModel {
+
+    record Account(String accountId, int availableBalance, int postedBalance) {}
+
+    record CreateAccountRequest(String accountId, int initialBalance) {}
+
+    record GetAllAccountsResponse(java.util.List<Account> accounts) {}
+
+    record Card(String pan, String expiryDate, String cvv, String accountId) {}
+
+    record StartTransactionRequest(
             String idempotencyKey,
             String transactionId,
             String cardPan,
@@ -11,13 +20,13 @@ public class TransactionModels {
             int amount,
             String currency) {}
 
-    public record StartTransactionResponse(String result) {}
+    record StartTransactionResponse(String result) {}
 
-    public record CaptureTransactionResponse(String result) {}
+    record CaptureTransactionResponse(String result) {}
 
-    public record CancelTransactionResponse(String result) {}
+    record CancelTransactionResponse(String result) {}
 
-    public record Transaction(
+    record Transaction(
             String idempotencyKey,
             String transactionId,
             String cardPan,
@@ -33,7 +42,7 @@ public class TransactionModels {
             String cancelResult,
             String cancelStatus) {}
 
-    public record TransactionSummary(
+    record TransactionSummary(
             String idempotencyKey,
             String transactionId,
             String accountId,
@@ -44,5 +53,5 @@ public class TransactionModels {
             String cancelResult,
             String cancelStatus) {}
 
-    public record TransactionsByAccountResponse(java.util.List<TransactionSummary> transactions) {}
+    record TransactionsByAccountResponse(java.util.List<TransactionSummary> transactions) {}
 }

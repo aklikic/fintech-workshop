@@ -8,20 +8,20 @@ import akka.javasdk.http.HttpResponses;
 
 @Acl(allow = @Acl.Matcher(principal = Acl.Principal.INTERNET))
 @HttpEndpoint
-public class StaticResourcesEndpoint {
+public class UiEndpoint {
 
   @Get("/")
   public HttpResponse index() {
-    return HttpResponses.staticResource("index.html");
+    return HttpResponses.staticResource("ui/index.html");
   }
 
   @Get("styles.css")
   public HttpResponse styles() {
-    return HttpResponses.staticResource("styles.css");
+    return HttpResponses.staticResource("ui/styles.css");
   }
 
   @Get("app.js")
   public HttpResponse js() {
-    return HttpResponses.staticResource("app.js");
+    return HttpResponses.staticResource("ui/app.js");
   }
 }
