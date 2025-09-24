@@ -6,10 +6,12 @@ import akka.javasdk.annotations.Query;
 import akka.javasdk.view.TableUpdater;
 import akka.javasdk.view.View;
 import com.example.akka.corebanking.domain.AccountEvent;
+import org.slf4j.Logger;
 
 @ComponentId("account-view")
 public class AccountView extends View {
 
+    private final static Logger logger = org.slf4j.LoggerFactory.getLogger(AccountView.class);
     public record AccountSummary(String accountId, int availableBalance, int postedBalance) {}
 
     public record AccountList(java.util.List<AccountSummary> accounts) {}
@@ -17,6 +19,7 @@ public class AccountView extends View {
     @Consume.FromEventSourcedEntity(value = AccountEntity.class)
     public static class AccountViewUpdater extends TableUpdater<AccountSummary> {
         public Effect<AccountSummary> onUpdate(AccountEvent event) {
+            logger.info("Received event {}", event);
             return switch (event) {
                 case AccountEvent.Created create ->
                         effects().updateRow(new AccountSummary(create.accountId(), create.initialBalance(), create.initialBalance()));

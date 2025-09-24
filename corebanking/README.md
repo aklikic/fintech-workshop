@@ -14,67 +14,67 @@ Use the following grpcurl commands to interact with the AccountGrpcEndpoint serv
 ```bash
 # Create Account
 grpcurl -plaintext -d '{"account_id": "account-123", "initial_balance": 1000}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/CreateAccount
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/CreateAccount
 ```
 
 ```bash
 # Get Account
 grpcurl -plaintext -d '{"account_id": "account-123"}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetAccount
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/GetAccount
 ```
 ```bash
 # Authorize Transaction
 grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "txn-456", "amount": 500}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/AuthorizeTransaction
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/AuthorizeTransaction
 ```
 ```bash
 # Capture Transaction
 grpcurl -plaintext -d '{"account_id": "account-123", "transaction_id": "txn-456"}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/CaptureTransaction
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/CaptureTransaction
 ```
 ```bash
 # Get Expenditure
 grpcurl -plaintext -d '{"account_id": "account-123"}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetExpenditure
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/GetExpenditure
 ```
 
 ```bash
 # Get All Accounts
 grpcurl -plaintext -d '{}' \
-  localhost:9002 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetAllAccounts
+  localhost:9002 com.example.akka.account.api.AccountGrpcEndpoint/GetAllAccounts
 ```
 
 #### Cloud Deployment
 ```bash
 # Create Account
 grpcurl -d '{"account_id": "account-123", "initial_balance": 1000}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/CreateAccount
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/CreateAccount
 ```
 ```bash
 # Get Account
 grpcurl -d '{"account_id": "account-123"}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetAccount
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/GetAccount
 ```
 ```bash
 # Authorize Transaction
 grpcurl -d '{"account_id": "account-123", "transaction_id": "txn-456", "amount": 500}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/AuthorizeTransaction
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/AuthorizeTransaction
 ```
 ```bash
 # Capture Transaction
 grpcurl -d '{"account_id": "account-123", "transaction_id": "txn-456"}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/CaptureTransaction
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/CaptureTransaction
 ```
 ```bash
 # Get Expenditure
 grpcurl -d '{"account_id": "account-123"}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetExpenditure
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/GetExpenditure
 ```
 
 ```bash
 # Get All Accounts
 grpcurl -d '{}' \
-  small-cloud-1731.gcp-us-east1.akka.services:443 api.account.com.example.akka.ui.AccountGrpcEndpoint/GetAllAccounts
+  small-cloud-1731.gcp-us-east1.akka.services:443 com.example.akka.account.api.AccountGrpcEndpoint/GetAllAccounts
 ```
 
 ## Components

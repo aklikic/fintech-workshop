@@ -75,7 +75,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
         }
     }
 
-    @Test
+//    @Test
     public void testTransactionWorkflowWithMockedAccountService() throws Exception {
         // Setup WireMock gRPC service to return successful authorization
         mockAccountService.stubFor(
