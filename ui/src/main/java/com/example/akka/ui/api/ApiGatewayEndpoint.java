@@ -89,20 +89,6 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
         return new AccountModels.CaptureTransactionResponse(grpcResponse.getSuccess());
     }
 
-    @Get("/accounts/{accountId}/expenditure")
-    public AccountModels.ExpenditureResponse getExpenditure(String accountId) {
-        var grpcRequest = ExpenditureRequest.newBuilder()
-                .setAccountId(accountId)
-                .build();
-
-        var grpcResponse = accountClient.getExpenditure().invoke(grpcRequest);
-        return new AccountModels.ExpenditureResponse(
-                grpcResponse.getAccountId(),
-                grpcResponse.getMoneyIn(),
-                grpcResponse.getMoneyOut()
-        );
-    }
-
     @Get("/accounts")
     public AccountModels.GetAllAccountsResponse getAllAccounts() {
         var grpcRequest = com.example.akka.account.api.GetAllAccountsRequest.newBuilder().build();

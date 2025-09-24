@@ -25,7 +25,7 @@ public class CardGrpcEndpointImpl implements CardGrpcEndpoint {
         try {
             var res = componentClient.forEventSourcedEntity(in.getPan())
                 .method(CardEntity::createCard)
-                .invoke(new CardEntity.ApiCard(in.getPan(), in.getExpiryDate(), in.getCvv(), in.getAccountId(), false));
+                .invoke(new CardEntity.ApiCard(in.getPan(), in.getExpiryDate(), in.getCvv(), in.getAccountId()));
             return fromState(res);
         }catch (Exception e){
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));

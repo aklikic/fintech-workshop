@@ -6,11 +6,7 @@ import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
 import com.example.akka.account.api.*;
 import com.example.akka.corebanking.application.AccountEntity;
-import com.example.akka.corebanking.application.AccountTotalExpenditureView;
-import com.example.akka.corebanking.application.AccountTransactionEntity;
 import com.example.akka.corebanking.application.AccountView;
-import com.example.akka.corebanking.domain.TotalExpenditure;
-import com.example.akka.corebanking.domain.AccountTransaction;
 import io.grpc.Status;
 import org.slf4j.Logger;
 
@@ -70,21 +66,6 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
         logger.info("Authorizing transaction {} for account {} amount {}",
                 in.getTransactionId(), in.getAccountId(), in.getAmount());
 
-        AccountTransaction.AccountTransactionId trxId = new AccountTransaction.AccountTransactionId(in.getTransactionId(), in.getAccountId());
-        var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-                .method(AccountTransactionEntity::getTransaction)
-                .invoke();
-
-        if (transactionHistory.isPresent() && (transactionHistory.get().isAuthorized() || transactionHistory.get().isCaptured())) {
-
-            logger.info("Duplicate transaction {}. Returning from cache", in.getTransactionId());
-            return AuthorizeTransactionResponse.newBuilder()
-                    .setAuthCode(transactionHistory.get().authCode())
-                    .setAuthResult(AuthResult.AUTHORISED)
-                    .setAuthStatus(AuthStatus.OK)
-                    .build();
-        }
-
         try {
 
             var authRequest = new AccountEntity.AuthorisationRequest(in.getTransactionId(), in.getAmount());
@@ -106,16 +87,6 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
     public CaptureTransactionResponse captureTransaction(CaptureTransactionRequest in) {
         logger.info("Capturing transaction {} for account {}", in.getTransactionId(), in.getAccountId());
 
-        AccountTransaction.AccountTransactionId trxId = new AccountTransaction.AccountTransactionId(in.getTransactionId(), in.getAccountId());
-        var transactionHistory = componentClient.forKeyValueEntity(trxId.toString())
-                .method(AccountTransactionEntity::getTransaction)
-                .invoke();
-
-        if (transactionHistory.isPresent() && transactionHistory.get().isCaptured()) {
-            logger.info("Duplicate transaction {}. Returning from cache", in.getTransactionId());
-            return CaptureTransactionResponse.newBuilder().setSuccess(true).build();
-        }
-
         try {
             componentClient.forEventSourcedEntity(in.getAccountId())
                     .method(AccountEntity::captureTransaction)
@@ -129,16 +100,6 @@ public class AccountGrpcEndpointImpl implements AccountGrpcEndpoint {
                     in.getTransactionId(), in.getAccountId(), e.getMessage());
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
         }
-    }
-
-    @Override
-    public ExpenditureResponse getExpenditure(ExpenditureRequest in) {
-        TotalExpenditure invoke = componentClient.forView().method(AccountTotalExpenditureView::get).invoke(in.getAccountId());
-        return ExpenditureResponse.newBuilder()
-                .setAccountId(invoke.accountId())
-                .setMoneyIn(invoke.moneyIn())
-                .setMoneyOut(invoke.moneyOut())
-                .build();
     }
 
     @Override

@@ -27,11 +27,6 @@ Capture Transaction:
 curl -X POST http://localhost:9003/api/accounts/account-123/capture -H "Content-Type: application/json" -d '{"transactionId": "txn-456"}'
 ```
 
-Get Account Expenditure:
-```bash
-curl -X GET http://localhost:9003/api/accounts/account-123/expenditure
-```
-
 ## Card Operations
 
 Create Card:

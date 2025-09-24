@@ -17,8 +17,7 @@ public class CardEntityTest {
                 "1234567890123456",
                 "12/27",
                 "123",
-                "account123",
-                 true
+                "account123"
         );
         var result = testKit.method(CardEntity::createCard).invoke(cardRequest);
         
@@ -49,8 +48,7 @@ public class CardEntityTest {
                 "1111222233334444",
                 "01/25",
                 "456",
-                "existing_account",
-                true
+                "existing_account"
         );
         
         testKit.method(CardEntity::createCard).invoke(existingCard);
@@ -59,8 +57,7 @@ public class CardEntityTest {
                 "5555666677778888",
                 "06/28",
                 "789",
-                "new_account",
-                true
+                "new_account"
         );
         
         var result = testKit.method(CardEntity::createCard).invoke(newCardRequest);
@@ -81,8 +78,7 @@ public class CardEntityTest {
                 "9999888877776666",
                 "03/26",
                 "321",
-                "test_account",
-                true
+                "test_account"
         );
         
         testKit.method(CardEntity::createCard).invoke(cardRequest);

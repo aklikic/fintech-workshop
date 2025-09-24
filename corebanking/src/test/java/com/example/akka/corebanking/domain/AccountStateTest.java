@@ -112,7 +112,7 @@ public class AccountStateTest {
     public void testOnCaptureAdded() {
         var auth = new AccountState.Authorisation("tx1", 200, "auth1");
         AccountState state = new AccountState("account123", List.of(auth), 800, 500);
-        AccountEvent.TransCaptureAdded event = new AccountEvent.TransCaptureAdded("tx1");
+        AccountEvent.TransCaptureAdded event = new AccountEvent.TransCaptureAdded("tx1", 200);
         
         AccountState newState = state.onCaptureAdded(event);
         
@@ -194,7 +194,7 @@ public class AccountStateTest {
         assertEquals(1, state.authorisations().size());
         
         // Add capture
-        AccountEvent.TransCaptureAdded captureEvent = new AccountEvent.TransCaptureAdded("tx1");
+        AccountEvent.TransCaptureAdded captureEvent = new AccountEvent.TransCaptureAdded("tx1", 300);
         state = state.onCaptureAdded(captureEvent);
         assertEquals(700, state.availableBalance());
         assertEquals(700, state.postedBalance()); // 1000 - 300 (posted balance updated on capture)

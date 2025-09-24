@@ -14,7 +14,5 @@ public class AccountModels {
 
     public record CaptureTransactionResponse(boolean success) {}
 
-    public record ExpenditureResponse(String accountId, int moneyIn, int moneyOut) {}
-
     public record GetAllAccountsResponse(java.util.List<Account> accounts) {}
 }

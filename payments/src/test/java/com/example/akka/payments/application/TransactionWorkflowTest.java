@@ -43,8 +43,7 @@ public class TransactionWorkflowTest extends TestKitSupport {
         };
 
         return TestKit.Settings.DEFAULT
-                .withDependencyProvider(mockDependencyProvider)
-                .withDisabledComponents(Set.of(CorebankingServiceEventConsumer.class));
+                .withDependencyProvider(mockDependencyProvider);
     }
 
     @BeforeAll
