@@ -118,7 +118,7 @@ Account ID: ${response.accountId}`;
             const cardExpiry = document.getElementById('transactionCardExpiry').value;
             const cardCvv = document.getElementById('transactionCardCvv').value;
             const amount = parseInt(document.getElementById('amount').value);
-            const currency = document.getElementById('currency').value;
+            const currency = 'USD';
 
             const request = {
                 idempotencyKey: idempotencyKey,
@@ -175,17 +175,23 @@ Result: ${response.result}`;
 
         transactions.forEach(transaction => {
             const row = document.createElement('tr');
+            let captureDisabled = '';
             let captureResult = "N/A";
             let captureStatus = "N/A";
             if(!(transaction.captureResult == 'declined' && transaction.captureStatus == 'ok')){
                 captureResult = transaction.captureResult;
                 captureStatus = transaction.captureStatus;
+                captureDisabled = 'disabled';
             }
             let cancelResult = "N/A";
             let cancelStatus = "N/A";
             if(!(transaction.cancelResult == 'declined' && transaction.cancelStatus == 'ok')){
                 cancelResult = transaction.cancelResult;
                 cancelStatus = transaction.cancelStatus;
+                captureDisabled = 'disabled';
+            }
+            if(!(transaction.authResult == 'declined' && transaction.authStatus == 'ok')){
+                captureDisabled = 'disabled';
             }
             row.innerHTML = `
                 <td>${transaction.transactionId}</td>
@@ -197,7 +203,7 @@ Result: ${response.result}`;
                 <td>${cancelResult}</td>
                 <td>${cancelStatus}</td>
                 <td class="action-buttons">
-                    <button class="primary-btn capture-btn" data-idempotency-key="${transaction.idempotencyKey}">
+                    <button class="primary-btn capture-btn" data-idempotency-key="${transaction.idempotencyKey}" ${captureDisabled}>
                         Capture
                     </button>
                 </td>
