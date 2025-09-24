@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.akka.payments.api";
+
+package com.example.akka.payments.api;
+
+message StartTransactionRequest {
+  string idempotency_key = 1;
+  string transaction_id = 2;
+  string card_pan = 3;
+  string card_expiry_date = 4;
+  string card_cvv = 5;
+  int32 amount = 6;
+  string currency = 7;
+}
+
+enum StartTransactionResult {
+  START_TRANSACTION_RESULT_UNSPECIFIED = 0;
+  STARTED = 1;
+  ALREADY_EXISTS = 2;
+  FAILED = 3;
+}
+
+message StartTransactionResponse {
+  StartTransactionResult result = 1;
+}
+
+message GetTransactionRequest {
+  string idempotency_key = 1;
+}
+
+message CaptureTransactionRequest {
+  string idempotency_key = 1;
+}
+
+enum CaptureTransactionResult {
+  CAPTURE_TRANSACTION_RESULT_UNSPECIFIED = 0;
+  CAPTURE_STARTED = 1;
+  TRANSACTION_NOT_FOUND = 2;
+  NOT_AUTHORIZED = 3;
+  ALREADY_CAPTURED = 4;
+}
+
+message CaptureTransactionResponse {
+  CaptureTransactionResult result = 1;
+}
+
+enum TransactionAuthResult {
+  TRANSACTION_AUTH_RESULT_UNSPECIFIED = 0;
+  AUTHORISED = 1;
+  DECLINED = 2;
+}
+
+enum TransactionAuthStatus {
+  TRANSACTION_AUTH_STATUS_UNSPECIFIED = 0;
+  OK = 1;
+  CARD_NOT_FOUND = 2;
+  INSUFFICIENT_FUNDS = 3;
+  ACCOUNT_CLOSED = 4;
+  UNDISCLOSED = 5;
+  ACCOUNT_NOT_FOUND = 6;
+}
+
+message Transaction {
+  string idempotency_key = 1;
+  string transaction_id = 2;
+  string card_pan = 3;
+  string card_expiry_date = 4;
+  string card_cvv = 5;
+  int32 amount = 6;
+  string currency = 7;
+  string auth_code = 8;
+  TransactionAuthResult auth_result = 9;
+  TransactionAuthStatus auth_status = 10;
+  bool captured = 11;
+}
+
+message TransactionSummary {
+  string idempotency_key = 1;
+  string transaction_id = 2;
+  string account_id = 3;
+  string auth_result = 4;
+  string auth_status = 5;
+}
+
+message GetTransactionsByAccountRequest {
+  string account_id = 1;
+}
+
+message GetTransactionsByAccountResponse {
+  repeated TransactionSummary transactions = 1;
+}
+
+service TransactionGrpcEndpoint {
+  rpc StartTransaction (StartTransactionRequest) returns (StartTransactionResponse) {}
+  rpc GetTransaction (GetTransactionRequest) returns (Transaction) {}
+  rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
+  rpc GetTransactionsByAccount (GetTransactionsByAccountRequest) returns (GetTransactionsByAccountResponse) {}
+}

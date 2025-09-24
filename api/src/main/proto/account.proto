@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.akka.account.api";
+
+package com.example.akka.account.api;
+
+message Account {
+  string account_id = 1;
+  int32 available_balance = 2;
+  int32 posted_balance = 3;
+}
+
+message CreateAccountRequest {
+  string account_id = 1;
+  int32 initial_balance = 2;
+}
+
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+message AuthorizeTransactionRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+  int32 amount = 3;
+}
+
+enum AuthResult {
+  AUTH_RESULT_UNSPECIFIED = 0;
+  AUTHORISED = 1;
+  DECLINED = 2;
+}
+
+enum AuthStatus {
+  AUTH_STATUS_UNSPECIFIED = 0;
+  OK = 1;
+  CARD_NOT_FOUND = 2;
+  INSUFFICIENT_FUNDS = 3;
+  ACCOUNT_CLOSED = 4;
+  UNDISCLOSED = 5;
+  ACCOUNT_NOT_FOUND = 6;
+}
+
+message AuthorizeTransactionResponse {
+  string auth_code = 1;
+  AuthResult auth_result = 2;
+  AuthStatus auth_status = 3;
+}
+
+message CaptureTransactionRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+}
+
+message ExpenditureRequest {
+  string account_id = 1;
+}
+
+message CaptureTransactionResponse {
+  bool success = 1;
+}
+
+message ExpenditureResponse {
+  string account_id = 1;
+  int32 money_in = 2;
+  int32 money_out = 3;
+}
+
+message GetAllAccountsRequest {
+  // Empty request for getting all accounts
+}
+
+message GetAllAccountsResponse {
+  repeated Account accounts = 1;
+}
+
+service AccountGrpcEndpoint {
+  rpc CreateAccount (CreateAccountRequest) returns (Account) {}
+  rpc GetAccount (GetAccountRequest) returns (Account) {}
+  rpc AuthorizeTransaction (AuthorizeTransactionRequest) returns (AuthorizeTransactionResponse) {}
+  rpc CaptureTransaction (CaptureTransactionRequest) returns (CaptureTransactionResponse) {}
+  rpc GetExpenditure (ExpenditureRequest) returns (ExpenditureResponse) {}
+  rpc GetAllAccounts (GetAllAccountsRequest) returns (GetAllAccountsResponse) {}
+}
