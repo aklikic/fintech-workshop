@@ -155,9 +155,8 @@ public class AccountGrpcEndpointIntegrationTest extends TestKitSupport {
                 .setAccountId("non_existent_capture_account")
                 .setTransactionId("txn999")
                 .build();
-        
-        assertThrows(Exception.class, () -> {
-            client.captureTransaction().invoke(captureRequest);
-        });
+
+        var result = client.captureTransaction().invoke(captureRequest);
+        assertEquals(CaptureTransStatus.CAPTURE_ACCOUNT_NOT_FOUND,result.getCaptureStatus());
     }
 }

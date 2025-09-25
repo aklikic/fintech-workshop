@@ -114,9 +114,9 @@ public class AccountEntityTest {
         var testKit = EventSourcedTestKit.of(AccountEntity::new);
         
         var result = testKit.method(AccountEntity::captureTransaction).invoke("tx123");
-        
-        assertTrue(result.isError());
-        assertEquals("Account not found", result.getError());
+
+        assertEquals(AccountEntity.CaptureTransactionStatus.account_not_found,result.getReply().captureStatus());
+
     }
 
     @Test
@@ -128,8 +128,8 @@ public class AccountEntityTest {
         testKit.method(AccountEntity::createAccount).invoke(accountRequest);
         
         var result = testKit.method(AccountEntity::captureTransaction).invoke("tx123");
-        
-        assertEquals(Done.getInstance(), result.getReply());
+
+        assertEquals(AccountEntity.CaptureTransactionStatus.transaction_not_found,result.getReply().captureStatus());
         assertFalse(result.didPersistEvents()); // Should be deduplicated
     }
 
@@ -195,7 +195,8 @@ public class AccountEntityTest {
         var firstCaptureResult = testKit.method(AccountEntity::captureTransaction).invoke("tx123");
         
         // Verify first capture succeeds
-        assertEquals(Done.getInstance(), firstCaptureResult.getReply());
+        assertEquals(AccountEntity.CaptureTransactionResult.captured,firstCaptureResult.getReply().captureResult());
+        assertEquals(AccountEntity.CaptureTransactionStatus.ok,firstCaptureResult.getReply().captureStatus());
         assertTrue(firstCaptureResult.didPersistEvents());
         
         // Verify account balances after first capture
@@ -208,7 +209,7 @@ public class AccountEntityTest {
         var secondCaptureResult = testKit.method(AccountEntity::captureTransaction).invoke("tx123");
         
         // Verify second capture also succeeds (deduplication)
-        assertEquals(Done.getInstance(), secondCaptureResult.getReply());
+        assertEquals(AccountEntity.CaptureTransactionStatus.transaction_not_found,secondCaptureResult.getReply().captureStatus());
         assertFalse(secondCaptureResult.didPersistEvents()); // No events persisted for duplicate
         
         // Verify account balances remain unchanged after duplicate capture

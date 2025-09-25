@@ -9,7 +9,7 @@ import akka.javasdk.client.ComponentClient;
 import com.example.akka.payments.application.CardEntity;
 import com.example.akka.payments.application.TransactionWorkflow;
 import com.example.akka.payments.application.TransactionsByAccountView;
-import dev.langchain4j.internal.Json;
+import com.example.akka.payments.domain.TransactionState;
 
 @Acl(allow = @Acl.Matcher(principal = Acl.Principal.ALL))
 @McpEndpoint(serverName = "account-mcp", serverVersion = "0.0.1")
@@ -63,6 +63,19 @@ public class PaymentsMcpEndpoint {
     public String getTransaction(@Description("Transaction idempotencyKey")String idempotencyKey) {
         try {
             var result = componentClient.forWorkflow(idempotencyKey).method(TransactionWorkflow::getTransaction).invoke();
+
+            var captureResult = "N/A";
+            var captureStatus = "N/A";
+            if(!(result.captureResult() == TransactionState.CaptureResult.declined && result.captureStatus() == TransactionState.CaptureStatus.ok)){
+                captureResult = result.captureResult().name();
+                captureStatus = result.captureStatus().name();
+            }
+            var cancelResult = "N/A";
+            var cancelStatus = "N/A";
+            if(!(result.cancelResult() == TransactionState.CancelResult.declined && result.cancelStatus() == TransactionState.CancelStatus.ok)){
+                cancelResult = result.cancelResult().name();
+                cancelStatus = result.cancelStatus().name();
+            }
             var response = new Transaction(
                     result.idempotencyKey(),
                     result.transactionId(),
@@ -74,10 +87,10 @@ public class PaymentsMcpEndpoint {
                     result.authCode(),
                     result.authResult().name(),
                     result.authStatus().name(),
-                    result.captureResult().name(),
-                    result.captureStatus().name(),
-                    result.cancelResult().name(),
-                    result.cancelStatus().name()
+                    captureResult,
+                    captureStatus,
+                    cancelResult,
+                    cancelStatus
             );
             return JsonSupport.encodeToString(response);
         }catch (Exception e) {

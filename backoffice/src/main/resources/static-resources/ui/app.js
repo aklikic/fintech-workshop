@@ -190,7 +190,7 @@ Result: ${response.result}`;
                 cancelStatus = transaction.cancelStatus;
                 captureDisabled = 'disabled';
             }
-            if(transaction.authResult == 'authorised' && transaction.authStatus == 'ok'){
+            if(!(transaction.authResult == 'authorised' && transaction.authStatus == 'ok')){
                 captureDisabled = 'disabled';
             }
             row.innerHTML = `
