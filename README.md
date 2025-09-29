@@ -3,35 +3,52 @@
 ## Sequence diagram
 ```mermaid
 sequenceDiagram
-    actor US as  Upstream System
+    participant BO as BackOffice
     participant Account as Account
     participant Card as Card
     participant Trans as Transaction
-    actor DS as  Downstream System
-    US->>Account: Create Account A1
-    US->>Account: List accounts
-    US->>Card: Create Card C1 and associate it with Account A1
-    US->>Card: List cards
+    opt Administration
+        BO->>Account: Create Account A1
+        BO->>Account: List accounts
+        BO->>Trans: List transactions
+        BO->>Card: Create Card C1 and associate it with Account A1
+        BO->>Card: List cards
+    end
     opt Authorisation
-        US->>Trans: Authorize amount X using Card C1 Transaction T1)
+        BO->>Trans: Authorize amount X using Card C1 Transaction T1)
         Trans->>Card: Validate Card C1 and retrieve Account Id (A1)
         Trans->>Account: Authorize amount X using Account A1 for transaction T1
         Account->>Account: Validate against the current balance and authorise
         Account->>Trans: Authorised/Declined
-        Trans-->DS: Notify transaction T1 authorised
     end
     opt Capture/Cancel
-        US->>Trans: Capture/Cancel Transaction T1
+        BO->>Trans: Capture/Cancel Transaction T1
         Trans->>Trans: Validate Transaction T1 state
         Trans->>Account: Capture/Cancel amount X using Account A1 for transaction T1
         Account->>Account: Validate against the current balance and previous made authorise
         Account->>Trans: Captured/Cancelled/Declined
-        Trans-->DS: Notify transaction T1 captured/canceled
     end
-    US->>Trans: List transactions
-
 ```
-
+## Sequence diagram with AI
+```mermaid
+---
+config:
+theme: redux-color
+look: handDrawn
+---
+sequenceDiagram
+participant Agent as BackOffice AI Assistent Agent
+participant Account as Account
+participant Card as Card
+participant Trans as Transaction
+Agent->>Account: Create Account A1
+Agent->>Account: List accounts
+Agent->>Trans: List transactions
+Agent->>Card: Create Card C1 and associate it with Account A1
+Agent->>Card: List cards
+Agent->>Trans: Authorize amount X using Card C1 Transaction T1)
+Agent->>Trans: Capture/Cancel Transaction T1
+```
 ## Local run
 
 Run corebanking service
