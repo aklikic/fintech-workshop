@@ -102,6 +102,54 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
         );
     }
 
+    @Get("/cards")
+    public ApiGatewayModel.GetAllCardsResponse getAllCards() {
+        var grpcRequest = com.example.akka.payments.api.GetAllCardsRequest.newBuilder().build();
+
+        var grpcResponse = cardClient.getAllCards().invoke(grpcRequest);
+        var cards = grpcResponse.getCardsList().stream()
+                .map(card -> new ApiGatewayModel.CardSummary(
+                        card.getPan(),
+                        card.getExpiryDate(),
+                        card.getAccountId()
+                ))
+                .toList();
+
+        return new ApiGatewayModel.GetAllCardsResponse(cards);
+    }
+
+    @Get("/accounts/{accountId}/cards")
+    public ApiGatewayModel.GetCardsByAccountResponse getCardsByAccount(String accountId) {
+        var grpcRequest = com.example.akka.payments.api.GetCardsByAccountRequest.newBuilder()
+                .setAccountId(accountId)
+                .build();
+
+        var grpcResponse = cardClient.getCardsByAccount().invoke(grpcRequest);
+        var cards = grpcResponse.getCardsList().stream()
+                .map(card -> new ApiGatewayModel.CardSummary(
+                        card.getPan(),
+                        card.getExpiryDate(),
+                        card.getAccountId()
+                ))
+                .toList();
+
+        return new ApiGatewayModel.GetCardsByAccountResponse(cards);
+    }
+
+    @Get("/cards/{pan}/summary")
+    public ApiGatewayModel.CardSummary getCardSummary(String pan) {
+        var grpcRequest = com.example.akka.payments.api.GetCardByPanRequest.newBuilder()
+                .setPan(pan)
+                .build();
+
+        var grpcResponse = cardClient.getCardByPan().invoke(grpcRequest);
+        return new ApiGatewayModel.CardSummary(
+                grpcResponse.getPan(),
+                grpcResponse.getExpiryDate(),
+                grpcResponse.getAccountId()
+        );
+    }
+
     @Post("/transactions/start")
     public ApiGatewayModel.StartTransactionResponse startTransaction(ApiGatewayModel.StartTransactionRequest request) {
         var grpcRequest = com.example.akka.payments.api.StartTransactionRequest.newBuilder()

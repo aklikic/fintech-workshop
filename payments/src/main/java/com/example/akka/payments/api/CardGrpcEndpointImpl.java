@@ -5,6 +5,7 @@ import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.GrpcEndpoint;
 import akka.javasdk.client.ComponentClient;
 import com.example.akka.payments.application.CardEntity;
+import com.example.akka.payments.application.CardView;
 import io.grpc.Status;
 import org.slf4j.Logger;
 
@@ -56,6 +57,75 @@ public class CardGrpcEndpointImpl implements CardGrpcEndpoint {
             return fromState(card);
         }catch (Exception e){
             throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
+        }
+    }
+
+    @Override
+    public GetAllCardsResponse getAllCards(GetAllCardsRequest request) {
+        logger.info("Getting all cards");
+        try {
+            var cardList = componentClient.forView()
+                    .method(CardView::getAllCards)
+                    .invoke();
+
+            var cards = cardList.cards().stream()
+                    .map(card -> CardSummary.newBuilder()
+                            .setPan(card.pan())
+                            .setExpiryDate(card.expiryDate())
+                            .setAccountId(card.accountId())
+                            .build())
+                    .toList();
+
+            return GetAllCardsResponse.newBuilder()
+                    .addAllCards(cards)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to get all cards: {}", e.getMessage());
+            throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
+        }
+    }
+
+    @Override
+    public GetCardsByAccountResponse getCardsByAccount(GetCardsByAccountRequest request) {
+        logger.info("Getting cards for account ID: {}", request.getAccountId());
+        try {
+            var cardList = componentClient.forView()
+                    .method(CardView::getCardsByAccount)
+                    .invoke(request.getAccountId());
+
+            var cards = cardList.cards().stream()
+                    .map(card -> CardSummary.newBuilder()
+                            .setPan(card.pan())
+                            .setExpiryDate(card.expiryDate())
+                            .setAccountId(card.accountId())
+                            .build())
+                    .toList();
+
+            return GetCardsByAccountResponse.newBuilder()
+                    .addAllCards(cards)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to get cards for account {}: {}", request.getAccountId(), e.getMessage());
+            throw new GrpcServiceException(Status.INTERNAL.augmentDescription(e.getMessage()));
+        }
+    }
+
+    @Override
+    public CardSummary getCardByPan(GetCardByPanRequest request) {
+        logger.info("Getting card summary for PAN: {}", request.getPan());
+        try {
+            var card = componentClient.forView()
+                    .method(CardView::getCardByPan)
+                    .invoke(request.getPan());
+
+            return CardSummary.newBuilder()
+                    .setPan(card.pan())
+                    .setExpiryDate(card.expiryDate())
+                    .setAccountId(card.accountId())
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to get card summary for PAN {}: {}", request.getPan(), e.getMessage());
+            throw new GrpcServiceException(Status.NOT_FOUND.augmentDescription("Card not found: " + e.getMessage()));
         }
     }
 

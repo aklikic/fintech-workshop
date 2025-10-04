@@ -27,8 +27,36 @@ message GetCardRequest {
   string pan = 1;
 }
 
+message CardSummary {
+  string pan = 1;
+  string expiry_date = 2;
+  string account_id = 3;
+}
+
+message GetAllCardsRequest {
+}
+
+message GetAllCardsResponse {
+  repeated CardSummary cards = 1;
+}
+
+message GetCardsByAccountRequest {
+  string account_id = 1;
+}
+
+message GetCardsByAccountResponse {
+  repeated CardSummary cards = 1;
+}
+
+message GetCardByPanRequest {
+  string pan = 1;
+}
+
 service CardGrpcEndpoint {
   rpc CreateCard (Card) returns (Card) {}
   rpc ValidateCard (ValidateCardRequest) returns (ValidateCardResponse) {}
   rpc GetCard (GetCardRequest) returns (Card) {}
+  rpc GetAllCards (GetAllCardsRequest) returns (GetAllCardsResponse) {}
+  rpc GetCardsByAccount (GetCardsByAccountRequest) returns (GetCardsByAccountResponse) {}
+  rpc GetCardByPan (GetCardByPanRequest) returns (CardSummary) {}
 }

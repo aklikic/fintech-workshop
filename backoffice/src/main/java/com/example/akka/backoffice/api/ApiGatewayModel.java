@@ -11,6 +11,12 @@ public interface ApiGatewayModel {
 
     record Card(String pan, String expiryDate, String cvv, String accountId) {}
 
+    record CardSummary(String pan, String expiryDate, String accountId) {}
+
+    record GetAllCardsResponse(java.util.List<CardSummary> cards) {}
+
+    record GetCardsByAccountResponse(java.util.List<CardSummary> cards) {}
+
     record StartTransactionRequest(
             String idempotencyKey,
             String transactionId,
