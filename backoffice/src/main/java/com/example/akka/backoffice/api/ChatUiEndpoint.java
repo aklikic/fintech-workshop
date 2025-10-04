@@ -14,8 +14,8 @@ import akka.javasdk.client.ComponentClient;
 import akka.javasdk.http.HttpResponses;
 import akka.stream.javadsl.Source;
 import com.example.akka.backoffice.application.BackOfficeAssistentAgent;
+import com.example.akka.backoffice.application.BackOfficeStreamingAssistentAgent;
 
-import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -44,14 +44,23 @@ public class ChatUiEndpoint {
         this.componentClient = componentClient;
     }
 
-    @Post("/ask")
+    @Post("/ask-stream")
     public HttpResponse askStream(QueryRequest request) throws ExecutionException, InterruptedException {
         Source<String, NotUsed> responseStream = componentClient
                 .forAgent()
                 .inSession(request.userId())
-                .tokenStream(BackOfficeAssistentAgent::ask)
+                .tokenStream(BackOfficeStreamingAssistentAgent::ask)
                 .source(request.question);
         return HttpResponses.serverSentEvents(responseStream);
+    }
+
+    @Post("/ask")
+    public String ask(QueryRequest request) throws ExecutionException, InterruptedException {
+        return componentClient
+                .forAgent()
+                .inSession(request.userId())
+                .method(BackOfficeAssistentAgent::ask)
+                .invoke(request.question);
     }
 
     public record Dialog(String userId, DialogSource dialogSource, String text, Instant timestamp) {

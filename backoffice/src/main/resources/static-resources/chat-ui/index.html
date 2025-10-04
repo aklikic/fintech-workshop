@@ -330,7 +330,7 @@
         sendBtn.disabled = true;
 
         try {
-            const response = await fetch('/chat/ask', {
+            const response = await fetch('/chat/ask-stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

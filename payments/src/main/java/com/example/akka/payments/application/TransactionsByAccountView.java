@@ -32,6 +32,19 @@ public class TransactionsByAccountView extends View {
         public Effect<TransactionSummary> onUpdate(TransactionState transactionState) {
             var idempotencyKey = updateContext().eventSubject().orElse("");
 
+            var captureResult = "N/A";
+            var captureStatus = "N/A";
+            if(!(transactionState.captureResult() == TransactionState.CaptureResult.declined && transactionState.captureStatus() == TransactionState.CaptureStatus.ok)){
+                captureResult = transactionState.captureResult().name();
+                captureStatus = transactionState.captureStatus().name();
+            }
+            var cancelResult = "N/A";
+            var cancelStatus = "N/A";
+            if(!(transactionState.cancelResult() == TransactionState.CancelResult.declined && transactionState.cancelStatus() == TransactionState.CancelStatus.ok)){
+                cancelResult = transactionState.cancelResult().name();
+                cancelStatus = transactionState.cancelStatus().name();
+            }
+
             return effects().updateRow(
                     new TransactionSummary(
                             idempotencyKey,
@@ -39,10 +52,10 @@ public class TransactionsByAccountView extends View {
                             transactionState.accountId(),
                             transactionState.authResult().name(),
                             transactionState.authStatus().name(),
-                            transactionState.captureResult().name(),
-                            transactionState.captureStatus().name(),
-                            transactionState.cancelResult().name(),
-                            transactionState.cancelStatus().name()
+                            captureResult,
+                            captureStatus,
+                            cancelResult,
+                            cancelStatus
                     )
             );
         }

@@ -5,8 +5,8 @@ import akka.javasdk.agent.RemoteMcpTools;
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.client.ComponentClient;
 
-@ComponentId("backoffice-agent")
-public class BackOfficeAssistentAgent extends Agent {
+@ComponentId("backoffice-streaming-agent")
+public class BackOfficeStreamingAssistentAgent extends Agent {
 
   private static final String SYSTEM_MESSAGE =
           """
@@ -21,12 +21,12 @@ public class BackOfficeAssistentAgent extends Agent {
           """.stripIndent();
   private final ComponentClient componentClient;
 
-  public BackOfficeAssistentAgent(ComponentClient componentClient) {
+  public BackOfficeStreamingAssistentAgent(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
 
-  public Effect<String> ask(String question) {
-    return effects()
+  public StreamEffect ask(String question) {
+    return streamEffects()
       .systemMessage(SYSTEM_MESSAGE)
       .mcpTools(RemoteMcpTools.fromService("corebanking"), RemoteMcpTools.fromService("payments"))
       .userMessage(question)
