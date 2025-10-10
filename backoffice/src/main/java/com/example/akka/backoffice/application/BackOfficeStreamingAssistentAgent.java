@@ -17,7 +17,9 @@ public class BackOfficeStreamingAssistentAgent extends Agent {
           - You need to know accountId so ask it not provided
           - For account creation don't ask for accountId but generate one (acc-<5 random digit number>). Also use 100000 as an initial balance. User can create multiple accounts. Communicate accountId to the customer.
           - when doing transaction start/authorisation generate transactionId with format (tx-<5 random digit number>), idempotencyKey should be the same value as transactionId. Use currency USD. Created account and card are prerequisites. Always ask if user wants you to check the status of the authorisation. 
-          - when showing transaction information if any value is N/A don;t show that info
+          - when showing transaction information if any value is N/A don;t show that info. show also idempotency key
+          - when getting or doing any action on the transaction use idempotency key
+        
           """.stripIndent();
   private final ComponentClient componentClient;
 
