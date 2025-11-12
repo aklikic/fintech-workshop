@@ -1,7 +1,6 @@
 package com.example.akka.corebanking.application;
 
-import akka.Done;
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.eventsourcedentity.EventSourcedEntity;
 import com.example.akka.corebanking.domain.AccountEvent;
 import com.example.akka.corebanking.domain.AccountState;
@@ -9,7 +8,7 @@ import com.example.akka.corebanking.domain.AccountState;
 import java.util.Optional;
 import java.util.UUID;
 
-@ComponentId("account-entity")
+@Component(id = "account-entity")
 public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent> {
   
   @Override
@@ -42,7 +41,7 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
       if (authOpt.isPresent()) {
         //deduplication
         return effects()
-                .reply(AuthorisationResponse.ok(authOpt.map(AccountState.Authorisation::authCode).get()));
+                .reply(AuthorisationResponse.ok(authOpt.get().authCode()));
       }
       
       if (!currentState().isAvailableBalance(request.amount())) {
@@ -65,7 +64,7 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
               .reply(CaptureTransactionResponse.error(CaptureTransactionResult.declined, CaptureTransactionStatus.account_not_found));
     }
     var maybeTrans = currentState().getAuthorisation(transactionId);
-    if (!maybeTrans.isPresent()) {
+    if (maybeTrans.isEmpty()) {
       //deduplication
       return effects()
               .reply(CaptureTransactionResponse.error(CaptureTransactionResult.declined, CaptureTransactionStatus.transaction_not_found));
@@ -83,7 +82,7 @@ public class AccountEntity extends EventSourcedEntity<AccountState, AccountEvent
                     .reply(CancelTransactionResponse.error(CancelTransactionResult.declined, CancelTransactionStatus.account_not_found));
         }
         var maybeTrans = currentState().getAuthorisation(transactionId);
-        if (!maybeTrans.isPresent()) {
+        if (maybeTrans.isEmpty()) {
             //deduplication
             return effects()
                     .reply(CancelTransactionResponse.error(CancelTransactionResult.declined, CancelTransactionStatus.transaction_not_found));

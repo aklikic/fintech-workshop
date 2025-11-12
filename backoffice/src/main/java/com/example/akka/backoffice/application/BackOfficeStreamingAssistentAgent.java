@@ -2,10 +2,9 @@ package com.example.akka.backoffice.application;
 
 import akka.javasdk.agent.Agent;
 import akka.javasdk.agent.RemoteMcpTools;
-import akka.javasdk.annotations.ComponentId;
-import akka.javasdk.client.ComponentClient;
+import akka.javasdk.annotations.Component;
 
-@ComponentId("backoffice-streaming-agent")
+@Component(id = "backoffice-streaming-agent")
 public class BackOfficeStreamingAssistentAgent extends Agent {
 
   private static final String SYSTEM_MESSAGE =
@@ -21,11 +20,6 @@ public class BackOfficeStreamingAssistentAgent extends Agent {
           - when getting or doing any action on the transaction use idempotency key
         
           """.stripIndent();
-  private final ComponentClient componentClient;
-
-  public BackOfficeStreamingAssistentAgent(ComponentClient componentClient) {
-    this.componentClient = componentClient;
-  }
 
   public StreamEffect ask(String question) {
     return streamEffects()

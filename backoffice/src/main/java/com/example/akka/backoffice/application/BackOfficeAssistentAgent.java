@@ -2,10 +2,9 @@ package com.example.akka.backoffice.application;
 
 import akka.javasdk.agent.Agent;
 import akka.javasdk.agent.RemoteMcpTools;
-import akka.javasdk.annotations.ComponentId;
-import akka.javasdk.client.ComponentClient;
+import akka.javasdk.annotations.Component;
 
-@ComponentId("backoffice-agent")
+@Component(id = "backoffice-agent")
 public class BackOfficeAssistentAgent extends Agent {
 
   private static final String SYSTEM_MESSAGE =
@@ -20,11 +19,6 @@ public class BackOfficeAssistentAgent extends Agent {
           - when showing transaction information if any value is N/A don;t show that info. show also idempotency key
           - when getting or doing any action on the transaction use idempotency key
           """.stripIndent();
-  private final ComponentClient componentClient;
-
-  public BackOfficeAssistentAgent(ComponentClient componentClient) {
-    this.componentClient = componentClient;
-  }
 
   public Effect<String> ask(String question) {
     return effects()

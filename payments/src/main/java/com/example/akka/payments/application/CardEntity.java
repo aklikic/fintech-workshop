@@ -1,11 +1,11 @@
 package com.example.akka.payments.application;
 
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.eventsourcedentity.EventSourcedEntity;
 import com.example.akka.payments.domain.CardEvent;
 import com.example.akka.payments.domain.CardState;
 
-@ComponentId("card-entity")
+@Component(id = "card-entity")
 public class CardEntity extends EventSourcedEntity<CardState, CardEvent> {
 
     @Override
