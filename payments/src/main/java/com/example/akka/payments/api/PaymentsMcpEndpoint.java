@@ -131,9 +131,9 @@ public class PaymentsMcpEndpoint {
         return JsonSupport.encodeToString(new TransactionsByAccountResponse(transactions));
     }
 
-    record Card(String pan, String expiryDate, String cvv, String accountId) {}
+    public record Card(String pan, String expiryDate, String cvv, String accountId) {}
 
-    record StartTransactionRequest(
+    public record StartTransactionRequest(
             @Description("requester unique id. Recommended using UUID") String idempotencyKey,
             @Description("unique transaction id. it can also be the same value as idempotencyKey. Recommended using UUID")String transactionId,
             @Description("Card pan")String cardPan,

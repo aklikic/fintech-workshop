@@ -1,6 +1,6 @@
 package com.example.akka.corebanking.application;
 
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.annotations.Consume;
 import akka.javasdk.annotations.Query;
 import akka.javasdk.view.TableUpdater;
@@ -8,7 +8,7 @@ import akka.javasdk.view.View;
 import com.example.akka.corebanking.domain.AccountEvent;
 import org.slf4j.Logger;
 
-@ComponentId("account-view")
+@Component(id = "account-view")
 public class AccountView extends View {
 
     private final static Logger logger = org.slf4j.LoggerFactory.getLogger(AccountView.class);

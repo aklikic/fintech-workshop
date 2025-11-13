@@ -42,7 +42,7 @@ public class AccountMcpEndpoint {
 
     record Account(String accountId, int availableBalance, int postedBalance) {}
 
-    record CreateAccountRequest(String accountId, int initialBalance) {}
+    public record CreateAccountRequest(String accountId, int initialBalance) {}
 
     record GetAllAccountsResponse(java.util.List<Account> accounts) {}
     private Account fromApiAccount(AccountView.AccountSummary in) {

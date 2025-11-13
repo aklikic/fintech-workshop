@@ -113,14 +113,14 @@ public class ChatUiEndpoint {
                                 if(dialogs.isEmpty()) {
                                     return new DialogListState(List.of(), state.lastTimestamp());
                                 }
-                                var lastDialog = dialogs.get(dialogs.size() - 1);
+                                var lastDialog = dialogs.getLast();
 //                                    logger.info("New dialogs #1: {}, {}", dialogs.size(), lastDialog.timestamp());
 
                                 return new DialogListState(dialogs, lastDialog.timestamp());
                             } else if(dialogs.isEmpty()){
                                 return new DialogListState(List.of(), state.lastTimestamp());
                             } else {
-                                var lastDialog = dialogs.get(dialogs.size() - 1);
+                                var lastDialog = dialogs.getLast();
 //                                    logger.info("New dialogs #2: {}, {}", dialogs.size(), lastDialog.timestamp());
                                 return new DialogListState(dialogs, lastDialog.timestamp());
                             }

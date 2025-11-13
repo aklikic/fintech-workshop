@@ -1,6 +1,6 @@
 package com.example.akka.payments.application;
 
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.annotations.Consume;
 import akka.javasdk.annotations.Query;
 import akka.javasdk.view.TableUpdater;
@@ -9,7 +9,7 @@ import com.example.akka.payments.domain.TransactionState;
 
 import java.util.Collection;
 
-@ComponentId("transactions-by-account")
+@Component(id = "transactions-by-account")
 public class TransactionsByAccountView extends View {
 
     public record TransactionSummary(

@@ -1,9 +1,17 @@
 package com.example.akka.payments.application;
 
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.workflow.Workflow;
-import com.example.akka.account.api.*;
+import com.example.akka.account.api.AccountGrpcEndpointClient;
+import com.example.akka.account.api.AuthResult;
+import com.example.akka.account.api.AuthStatus;
+import com.example.akka.account.api.CancelTransResult;
+import com.example.akka.account.api.CancelTransStatus;
+import com.example.akka.account.api.CancelTransactionRequest;
+import com.example.akka.account.api.CaptureTransResult;
+import com.example.akka.account.api.CaptureTransStatus;
+import com.example.akka.account.api.CaptureTransactionRequest;
 import com.example.akka.payments.domain.TransactionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Optional;
 
-@ComponentId("transaction-workflow")
+@Component(id = "transaction-workflow")
 public class TransactionWorkflow extends Workflow<TransactionState> {
     
     private static final Logger logger = LoggerFactory.getLogger(TransactionWorkflow.class);
