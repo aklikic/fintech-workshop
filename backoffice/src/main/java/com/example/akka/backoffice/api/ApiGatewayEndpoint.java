@@ -2,6 +2,7 @@ package com.example.akka.backoffice.api;
 
 import akka.javasdk.annotations.Acl;
 import akka.javasdk.annotations.http.*;
+import akka.javasdk.grpc.GrpcClientProvider;
 import akka.javasdk.http.AbstractHttpEndpoint;
 import com.example.akka.account.api.*;
 import com.example.akka.payments.api.CardGrpcEndpointClient;
@@ -11,17 +12,22 @@ import com.example.akka.payments.api.TransactionGrpcEndpointClient;
 @Acl(allow = @Acl.Matcher(principal = Acl.Principal.ALL))
 public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
 
-    private final AccountGrpcEndpointClient accountClient;
-    private final CardGrpcEndpointClient cardClient;
-    private final TransactionGrpcEndpointClient transactionClient;
+     private final GrpcClientProvider grpcClientProvider;
 
-    public ApiGatewayEndpoint(
-            AccountGrpcEndpointClient accountClient,
-            CardGrpcEndpointClient cardClient,
-            TransactionGrpcEndpointClient transactionClient) {
-        this.accountClient = accountClient;
-        this.cardClient = cardClient;
-        this.transactionClient = transactionClient;
+    public ApiGatewayEndpoint(GrpcClientProvider grpcClientProvider) {
+      this.grpcClientProvider = grpcClientProvider;
+    }
+
+    private AccountGrpcEndpointClient accountClient() {
+      return grpcClientProvider.grpcClientFor(AccountGrpcEndpointClient.class, "corebanking");
+    }
+
+    private CardGrpcEndpointClient cardClient() {
+      return grpcClientProvider.grpcClientFor(CardGrpcEndpointClient.class, "payments");
+    }
+
+    private TransactionGrpcEndpointClient transactionClient() {
+      return grpcClientProvider.grpcClientFor(TransactionGrpcEndpointClient.class, "payments");
     }
 
     @Post("/accounts")
@@ -31,7 +37,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setInitialBalance(request.initialBalance())
                 .build();
 
-        var grpcResponse = accountClient.createAccount().invoke(grpcRequest);
+        var grpcResponse = accountClient().createAccount().invoke(grpcRequest);
         return new ApiGatewayModel.Account(
                 grpcResponse.getAccountId(),
                 grpcResponse.getAvailableBalance(),
@@ -45,7 +51,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setAccountId(accountId)
                 .build();
 
-        var grpcResponse = accountClient.getAccount().invoke(grpcRequest);
+        var grpcResponse = accountClient().getAccount().invoke(grpcRequest);
         return new ApiGatewayModel.Account(
                 grpcResponse.getAccountId(),
                 grpcResponse.getAvailableBalance(),
@@ -57,7 +63,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
     public ApiGatewayModel.GetAllAccountsResponse getAllAccounts() {
         var grpcRequest = com.example.akka.account.api.GetAllAccountsRequest.newBuilder().build();
 
-        var grpcResponse = accountClient.getAllAccounts().invoke(grpcRequest);
+        var grpcResponse = accountClient().getAllAccounts().invoke(grpcRequest);
         var accounts = grpcResponse.getAccountsList().stream()
                 .map(account -> new ApiGatewayModel.Account(
                         account.getAccountId(),
@@ -78,7 +84,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setAccountId(card.accountId())
                 .build();
 
-        var grpcResponse = cardClient.createCard().invoke(grpcRequest);
+        var grpcResponse = cardClient().createCard().invoke(grpcRequest);
         return new ApiGatewayModel.Card(
                 grpcResponse.getPan(),
                 grpcResponse.getExpiryDate(),
@@ -93,7 +99,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setPan(pan)
                 .build();
 
-        var grpcResponse = cardClient.getCard().invoke(grpcRequest);
+        var grpcResponse = cardClient().getCard().invoke(grpcRequest);
         return new ApiGatewayModel.Card(
                 grpcResponse.getPan(),
                 grpcResponse.getExpiryDate(),
@@ -114,7 +120,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setCurrency(request.currency())
                 .build();
 
-        var grpcResponse = transactionClient.startTransaction().invoke(grpcRequest);
+        var grpcResponse = transactionClient().startTransaction().invoke(grpcRequest);
         return new ApiGatewayModel.StartTransactionResponse(grpcResponse.getResult().name());
     }
 
@@ -124,7 +130,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setIdempotencyKey(idempotencyKey)
                 .build();
 
-        var grpcResponse = transactionClient.getTransaction().invoke(grpcRequest);
+        var grpcResponse = transactionClient().getTransaction().invoke(grpcRequest);
         return new ApiGatewayModel.Transaction(
                 grpcResponse.getIdempotencyKey(),
                 grpcResponse.getTransactionId(),
@@ -149,7 +155,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setIdempotencyKey(idempotencyKey)
                 .build();
 
-        var grpcResponse = transactionClient.captureTransaction().invoke(grpcRequest);
+        var grpcResponse = transactionClient().captureTransaction().invoke(grpcRequest);
         return new ApiGatewayModel.CaptureTransactionResponse(grpcResponse.getResult().name());
     }
 
@@ -159,7 +165,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setIdempotencyKey(idempotencyKey)
                 .build();
 
-        var grpcResponse = transactionClient.cancelTransaction().invoke(grpcRequest);
+        var grpcResponse = transactionClient().cancelTransaction().invoke(grpcRequest);
         return new ApiGatewayModel.CancelTransactionResponse(grpcResponse.getResult().name());
     }
 
@@ -169,7 +175,7 @@ public class ApiGatewayEndpoint extends AbstractHttpEndpoint {
                 .setAccountId(accountId)
                 .build();
 
-        var grpcResponse = transactionClient.getTransactionsByAccount().invoke(grpcRequest);
+        var grpcResponse = transactionClient().getTransactionsByAccount().invoke(grpcRequest);
 
         var transactions = grpcResponse.getTransactionsList().stream()
                 .map(t -> new ApiGatewayModel.TransactionSummary(
