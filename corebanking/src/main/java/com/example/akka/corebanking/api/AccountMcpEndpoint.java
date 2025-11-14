@@ -26,7 +26,11 @@ public class AccountMcpEndpoint {
         return "OK";
     }
 
-    @McpTool(description = "Get account information")
+    @McpTool(description = """
+    Get account information.
+    The returned payload contains the account id, the available and posted balance.
+    Balance are expressed as euros without cents.
+    """)
     public String getAccount(String accountId) {
         var result = componentClient.forEventSourcedEntity(accountId).method(AccountEntity::getAccount).invoke();
         var res = new Account(result.accountId(), result.availableBalance(), result.postedBalance());
