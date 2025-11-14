@@ -51,17 +51,22 @@ Agent->>Trans: Capture/Cancel Transaction T1
 ```
 ## Local run
 
+Compile and publish locally the API project
+```bash
+mvn compile install -pl api
+```
+
 Run corebanking service
 ```bash
- mvn exec:java -pl corebanking
+ mvn compile exec:java -pl corebanking
 ```
 Run payments service
 ```bash
- mvn exec:java -pl payments
+ mvn compile exec:java -pl payments
 ```
 Run backoffice service
 ```bash
- mvn exec:java -pl backoffice
+ mvn compile exec:java -pl backoffice
 ```
 
 ## Local CLI test
